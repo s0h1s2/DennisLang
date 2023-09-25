@@ -260,12 +260,12 @@ func main() {
 	//
 	// nodes := []Node{&some_var, &other_one, &other_var, &bi, &bi2}
 	// codegen(env, nodes)
-	src := "1 + 2 \n +2"
+	src := "11+2"
 	bag := error.New()
 	lex := lexer.New(bag)
 	tokens := lex.GetTokens([]byte(src))
 	for _, token := range tokens {
-		fmt.Println(token)
+		fmt.Println(token.String())
 	}
 	if bag.GotErrors() {
 		bag.PrintErrors()
