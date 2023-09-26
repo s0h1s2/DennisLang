@@ -16,7 +16,7 @@ type Lexer struct {
 }
 
 const (
-	EOF = -1
+	EOF = 0
 )
 
 func New(bag *error.DiagnosticBag) *Lexer {
@@ -39,8 +39,17 @@ func (lex *Lexer) next() {
 	if lex.current < len(lex.src) {
 		lex.current += 1
 	}
+	lex.ch = EOF
 	if !lex.atEnd() {
 		lex.ch = lex.src[lex.current]
+	}
+
+}
+func (lex *Lexer) makeToken(kind TokenKind, literal string) Token {
+	return Token{
+		kind:    kind,
+		literal: literal,
+		Pos:     error.Position{Start: lex.current, End: lex.current, Line: lex.line},
 	}
 }
 func (lex *Lexer) atEnd() bool {
@@ -58,7 +67,12 @@ func (lex *Lexer) updateLine() {
 	}
 }
 func (lex *Lexer) scanInt() string {
-	return "0"
+	var val []byte
+	for lex.ch >= '0' && lex.ch <= '9' {
+		val = append(val, lex.ch)
+		lex.next()
+	}
+	return string(val)
 }
 func (lex *Lexer) getToken() Token {
 	lex.start = lex.current
@@ -75,21 +89,17 @@ func (lex *Lexer) getToken() Token {
 		case '+':
 			{
 				lex.next()
-				return Token{kind: TK_PLUS, literal: "+"}
+				return lex.makeToken(TK_PLUS, "")
 			}
 		default:
 			{
-				var val []byte
 				if lex.ch >= '0' && lex.ch <= '9' {
-					for lex.ch >= '0' && lex.ch <= '9' {
-						val = append(val, lex.ch)
-						lex.next()
-					}
-					return Token{kind: TK_INTEGER, literal: string(val)}
+					val := lex.scanInt()
+					return lex.makeToken(TK_INTEGER, string(val))
 				}
 				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c'", lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
 				lex.next()
-				return Token{kind: TK_ILLEGAL, literal: "Illegal"}
+				return lex.makeToken(TK_ILLEGAL, "")
 			}
 		}
 	}
