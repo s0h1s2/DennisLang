@@ -7,8 +7,8 @@ Dennis is a brand new programming language for system programming space it aims 
 - [ ] Parser 
 - [ ] Typechecking
 - [ ] X86_64 code generation
-- [ ] write language specification
-- [ ] self-hosting
+- [ ] Write language specification
+- [ ] Self-hosting
 
 ### Contribution
 Any contribution would be welcome.
