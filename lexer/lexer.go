@@ -19,6 +19,28 @@ const (
 	EOF = 0
 )
 
+type Keyword = map[string]TokenKind
+
+var keywords Keyword = Keyword{
+	"if":  TK_IF,
+	"let": TK_LET,
+}
+
+func isKeyword(word string) TokenKind {
+	if value, ok := keywords[word]; ok {
+		return value
+	}
+	return TK_IDENT
+}
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+func isNumeric(c byte) bool {
+	return (c >= '0' && c <= '9')
+}
+func isAlphaNumeric(c byte) bool {
+	return isAlpha(c) || isNumeric(c)
+}
 func New(bag *error.DiagnosticBag) *Lexer {
 	return &Lexer{
 		src:     make([]byte, 0),
@@ -47,8 +69,8 @@ func (lex *Lexer) next() {
 }
 func (lex *Lexer) makeToken(kind TokenKind, literal string) Token {
 	return Token{
-		kind:    kind,
-		literal: literal,
+		Kind:    kind,
+		Literal: literal,
 		Pos:     error.Position{Start: lex.current, End: lex.current, Line: lex.line},
 	}
 }
@@ -74,6 +96,14 @@ func (lex *Lexer) scanInt() string {
 	}
 	return string(val)
 }
+func (lex *Lexer) scanIdentOrKeyword() string {
+	result := ""
+	for isAlphaNumeric(lex.ch) || lex.ch == '_' {
+		result += string(lex.ch)
+		lex.next()
+	}
+	return result
+}
 func (lex *Lexer) getToken() Token {
 	lex.start = lex.current
 	// TODO: jesus christ this is really bad!
@@ -81,7 +111,7 @@ func (lex *Lexer) getToken() Token {
 	lex.updateLine()
 	lex.skipWhitespace()
 	if lex.atEnd() {
-		return Token{kind: TK_EOF}
+		return Token{Kind: TK_EOF}
 	}
 	lex.ch = lex.src[lex.current]
 	for {
@@ -91,11 +121,29 @@ func (lex *Lexer) getToken() Token {
 				lex.next()
 				return lex.makeToken(TK_PLUS, "")
 			}
+		case '=':
+			{
+				lex.next()
+				return lex.makeToken(TK_ASSIGN, "")
+			}
+		case ':':
+			{
+				lex.next()
+				return lex.makeToken(TK_COLON, "")
+			}
+		case ';':
+			{
+				lex.next()
+				return lex.makeToken(TK_SEMICOLON, "")
+			}
 		default:
 			{
 				if lex.ch >= '0' && lex.ch <= '9' {
 					val := lex.scanInt()
 					return lex.makeToken(TK_INTEGER, string(val))
+				} else if isAlpha(lex.ch) || lex.ch == '_' {
+					result := lex.scanIdentOrKeyword()
+					return lex.makeToken(isKeyword(result), result)
 				}
 				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c'", lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
 				lex.next()
@@ -109,7 +157,7 @@ func (lex *Lexer) GetTokens(src []byte) []Token {
 	lex.src = src
 	token := lex.getToken()
 	tokens := []Token{}
-	for token.kind != TK_EOF {
+	for token.Kind != TK_EOF {
 		tokens = append(tokens, token)
 		token = lex.getToken()
 	}

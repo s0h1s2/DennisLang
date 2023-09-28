@@ -5,6 +5,7 @@ import (
 
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
+	"github.com/s0h1s2/parser"
 )
 
 // import (
@@ -260,14 +261,17 @@ func main() {
 	//
 	// nodes := []Node{&some_var, &other_one, &other_var, &bi, &bi2}
 	// codegen(env, nodes)
-	src := "11+22+3-\n1=\n="
+	src := "let a:i8=1+2;"
 	bag := error.New()
 	lex := lexer.New(bag)
 	tokens := lex.GetTokens([]byte(src))
 	for _, token := range tokens {
 		fmt.Println(token.String())
 	}
+	parser := parser.New(tokens, bag)
+	parser.Parse()
 	if bag.GotErrors() {
 		bag.PrintErrors()
 	}
+
 }
