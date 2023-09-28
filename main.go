@@ -261,7 +261,7 @@ func main() {
 	//
 	// nodes := []Node{&some_var, &other_one, &other_var, &bi, &bi2}
 	// codegen(env, nodes)
-	src := "let a:i8=1+2;"
+	src := "1+2*3;"
 	bag := error.New()
 	lex := lexer.New(bag)
 	tokens := lex.GetTokens([]byte(src))

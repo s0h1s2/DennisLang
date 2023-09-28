@@ -1,7 +1,10 @@
 package parser
 
-import "github.com/s0h1s2/lexer"
-import "github.com/s0h1s2/error"
+import (
+	"github.com/s0h1s2/ast"
+	"github.com/s0h1s2/error"
+	"github.com/s0h1s2/lexer"
+)
 
 type Parser struct {
 	tokens     []lexer.Token
@@ -37,8 +40,17 @@ func New(tokens []lexer.Token, bag *error.DiagnosticBag) *Parser {
 		tokenIndex: 0,
 	}
 }
+
+func (p *Parser) parseExpression(prec byte) ast.Expr {
+	left := p.parseLeft()
+}
+func (p *Parser) parseLeft() ast.Expr {
+
+}
+
+// func (p *Parser) parseBase() *ast.Expr {}
 func (p *Parser) Parse() {
 	println("----PARSER----")
-	println(p.currentToken().String())
+	expr := p.parseExpression()
 
 }

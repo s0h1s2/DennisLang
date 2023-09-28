@@ -121,6 +121,11 @@ func (lex *Lexer) getToken() Token {
 				lex.next()
 				return lex.makeToken(TK_PLUS, "")
 			}
+		case '*':
+			{
+				lex.next()
+				return lex.makeToken(TK_STAR, "")
+			}
 		case '=':
 			{
 				lex.next()

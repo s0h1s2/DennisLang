@@ -10,6 +10,7 @@ const (
 	TK_IDENT
 	TK_ASSIGN
 	TK_PLUS
+	TK_STAR
 	TK_ILLEGAL
 	TK_SEMICOLON
 	TK_COLON
@@ -29,6 +30,8 @@ func (tk TokenKind) String() string {
 		return "Illegal"
 	case TK_PLUS:
 		return "+"
+	case TK_STAR:
+		return "*"
 	case TK_ASSIGN:
 		return "="
 	case TK_IDENT:

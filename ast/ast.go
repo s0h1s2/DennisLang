@@ -16,10 +16,15 @@ type StmtLet struct {
 	TypeName string
 	Init     Expr
 }
-
+type ExprBinary struct {
+	Left  Expr
+	Right Expr
+	Op    byte // [0:'+',1:'*']
+}
 type ExprInt struct {
 	Value int
 }
 
-func (e *ExprInt) exprNode() {}
-func (s *StmtLet) stmtNode() {}
+func (e *ExprInt) exprNode()    {}
+func (e *ExprBinary) exprNode() {}
+func (s *StmtLet) stmtNode()    {}
