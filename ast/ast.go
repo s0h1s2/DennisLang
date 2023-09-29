@@ -21,10 +21,15 @@ type ExprBinary struct {
 	Right Expr
 	Op    byte // [0:'+',1:'*']
 }
+type ExprIdent struct {
+	Name string
+}
+
 type ExprInt struct {
-	Value int
+	Value string
 }
 
 func (e *ExprInt) exprNode()    {}
 func (e *ExprBinary) exprNode() {}
+func (e *ExprIdent) exprNode()  {}
 func (s *StmtLet) stmtNode()    {}

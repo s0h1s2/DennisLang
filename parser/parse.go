@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"fmt"
+
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
@@ -11,6 +13,13 @@ type Parser struct {
 	bag        *error.DiagnosticBag
 	tokenIndex int
 }
+type Precedence byte
+
+const (
+	LOWEST Precedence = iota
+	TERM              = iota
+	FACTOR            = iota
+)
 
 func (p *Parser) peekToken() *lexer.Token {
 	if p.tokenIndex+1 < len(p.tokens) {
@@ -40,17 +49,43 @@ func New(tokens []lexer.Token, bag *error.DiagnosticBag) *Parser {
 		tokenIndex: 0,
 	}
 }
-
-func (p *Parser) parseExpression(prec byte) ast.Expr {
-	left := p.parseLeft()
+func (p *Parser) reportHere(msg string) {
+	p.bag.ReportError(error.Error{Msg: msg, Pos: p.currentToken().Pos})
 }
-func (p *Parser) parseLeft() ast.Expr {
+func (p *Parser) parseIdent() ast.Expr {
+	prev := p.currentToken()
+	p.consumeToken()
+	return &ast.ExprIdent{Name: prev.Literal}
+}
+func (p *Parser) parseInt() ast.Expr {
+	prev := p.currentToken()
+	p.consumeToken()
+	return &ast.ExprInt{Value: prev.Literal}
+}
 
+func (p *Parser) parseLeft() ast.Expr {
+	switch p.currentToken().Kind {
+	case lexer.TK_IDENT:
+		{
+			return p.parseIdent()
+		}
+	case lexer.TK_INTEGER:
+		{
+			return p.parseInt()
+		}
+	}
+	p.reportHere(fmt.Sprintf("Unknown kind of literal '%s'", p.currentToken().Kind.String()))
+	return nil
+}
+
+func (p *Parser) parseExpression(prec Precedence) ast.Expr {
+	left := p.parseLeft()
+	return left
 }
 
 // func (p *Parser) parseBase() *ast.Expr {}
 func (p *Parser) Parse() {
 	println("----PARSER----")
-	expr := p.parseExpression()
+	p.parseExpression(LOWEST)
 
 }

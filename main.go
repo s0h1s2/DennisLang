@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
@@ -272,6 +273,7 @@ func main() {
 	parser.Parse()
 	if bag.GotErrors() {
 		bag.PrintErrors()
+		os.Exit(1)
 	}
 
 }
