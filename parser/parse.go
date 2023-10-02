@@ -12,11 +12,13 @@ type Parser struct {
 	tokens     []lexer.Token
 	bag        *error.DiagnosticBag
 	tokenIndex int
+	inRHS      bool
 }
 type Precedence byte
 
 const (
 	LOWEST Precedence = iota
+	ASSIGN
 	TERM
 	FACTOR
 )
@@ -31,7 +33,7 @@ func (p *Parser) currentToken() *lexer.Token {
 	if p.tokenIndex < len(p.tokens) {
 		return &p.tokens[p.tokenIndex]
 	}
-	return &p.tokens[p.tokenIndex]
+	return &p.tokens[len(p.tokens)]
 }
 func (p *Parser) matchToken(kind lexer.TokenKind) bool {
 	if kind == p.currentToken().Kind {
@@ -40,7 +42,9 @@ func (p *Parser) matchToken(kind lexer.TokenKind) bool {
 	return false
 }
 func (p *Parser) consumeToken() {
-	p.tokenIndex++
+	if p.tokenIndex < len(p.tokens) {
+		p.tokenIndex++
+	}
 }
 func (p *Parser) atEnd() bool {
 	return p.currentToken().Kind == lexer.TK_EOF
@@ -50,6 +54,7 @@ func New(tokens []lexer.Token, bag *error.DiagnosticBag) *Parser {
 		tokens:     tokens,
 		bag:        bag,
 		tokenIndex: 0,
+		inRHS:      false,
 	}
 }
 func (p *Parser) reportHere(msg string) {
@@ -67,15 +72,23 @@ func getPreced(token *lexer.Token) Precedence {
 		return TERM
 	case lexer.TK_STAR:
 		return FACTOR
+	case lexer.TK_ASSIGN:
+		return ASSIGN
 	}
 	return LOWEST
 
 }
 func (p *Parser) peekPreced() Precedence {
-	return getPreced(p.peekToken())
+
+	prec := getPreced(p.peekToken())
+	return prec
 }
 func (p *Parser) currPreced() Precedence {
-	return getPreced(p.currentToken())
+	prec := getPreced(p.currentToken())
+	if p.inRHS {
+		return prec - 1
+	}
+	return prec
 }
 
 func (p *Parser) parseLeft() ast.Expr {
@@ -98,15 +111,27 @@ func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
 	right := p.parseExpression(preced)
 	return &ast.ExprBinary{Left: left, Right: right, Op: 1}
 }
+func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
+	old := p.inRHS
+	p.inRHS = true
+	preced := p.currPreced()
+	p.consumeToken()
+	right := p.parseExpression(preced)
+	p.inRHS = old
+	return &ast.ExprAssign{Left: left, Right: right}
+}
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	switch p.currentToken().Kind {
 	case lexer.TK_PLUS:
 		fallthrough
-
 	case lexer.TK_STAR:
 		{
 			return p.parseBinary(left), true
+		}
+	case lexer.TK_ASSIGN:
+		{
+			return p.parseAssignment(left), true
 		}
 	}
 	return nil, false
@@ -124,23 +149,7 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	return left
 }
 
-func (p *Parser) Parse() {
+func (p *Parser) Parse() ast.Expr {
 	println("----PARSER----")
-	result := p.parseExpression(LOWEST)
-	switch result.(type) {
-	case *ast.ExprInt:
-		{
-
-			println("int")
-		}
-	case *ast.ExprBinary:
-		{
-
-			println("binary")
-		}
-	default:
-		{
-			println("something else")
-		}
-	}
+	return p.parseExpression(LOWEST)
 }

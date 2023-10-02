@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
 	"github.com/s0h1s2/parser"
@@ -237,6 +238,35 @@ import (
 //		fmt.Fprintln(f, "mov rax,1")
 //		fmt.Fprintln(f, "int 0x80")
 //	}
+func printAst(expr ast.Expr) {
+	switch e := expr.(type) {
+	case *ast.ExprAssign:
+		{
+			printAst(e.Left)
+			print("=")
+			printAst(e.Right)
+		}
+	case *ast.ExprInt:
+		{
+			println(e.Value)
+		}
+
+	case *ast.ExprBinary:
+		{
+			printAst(e.Left)
+			printAst(e.Right)
+		}
+
+	case *ast.ExprIdent:
+		{
+			println(e.Name)
+		}
+	default:
+		{
+			panic("UnReachable")
+		}
+	}
+}
 func main() {
 	// env := &Environment{env: make(map[string]Entry)}
 	// env.registerType("char", &EntryType{Typee: Type{Alignment: 1, Size: 1}})
@@ -262,7 +292,7 @@ func main() {
 	//
 	// nodes := []Node{&some_var, &other_one, &other_var, &bi, &bi2}
 	// codegen(env, nodes)
-	src := "1+2*3;"
+	src := "a=b=c"
 	bag := error.New()
 	lex := lexer.New(bag)
 	tokens := lex.GetTokens([]byte(src))
@@ -270,9 +300,11 @@ func main() {
 		fmt.Println(token.String())
 	}
 	parser := parser.New(tokens, bag)
-	parser.Parse()
+	ast := parser.Parse()
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)
 	}
+	printAst(ast)
+
 }

@@ -60,5 +60,5 @@ func (tk *Token) String() string {
 	if tk.Literal != "" {
 		lit = tk.Literal
 	}
-	return fmt.Sprintf("(%s , %s)", tk.Kind.String(), lit)
+	return fmt.Sprintf("(%s , '%s')", tk.Kind.String(), lit)
 }
