@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/s0h1s2/ast"
@@ -292,7 +293,23 @@ func main() {
 	//
 	// nodes := []Node{&some_var, &other_one, &other_var, &bi, &bi2}
 	// codegen(env, nodes)
-	src := "a=b=c"
+	if len(os.Args) < 2 {
+		fmt.Printf("Usage: %s path-to-file\n", os.Args[0])
+		return
+	}
+	filePath := os.Args[1]
+	_, err := os.Stat(filePath)
+	if os.IsNotExist(err) {
+		fmt.Printf("Provided file '%s' doesn't exist.", filePath)
+		return
+	}
+	file, err := os.Open(filePath)
+	if err != nil {
+		println("Unable to open file")
+		return
+	}
+	src, err := io.ReadAll(file)
+	file.Close()
 	bag := error.New()
 	lex := lexer.New(bag)
 	tokens := lex.GetTokens([]byte(src))

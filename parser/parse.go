@@ -102,7 +102,7 @@ func (p *Parser) parseLeft() ast.Expr {
 			return p.parseInt()
 		}
 	}
-	p.reportHere(fmt.Sprintf("Unable to parse '%s'.", p.currentToken().Kind.String()))
+	p.reportHere(fmt.Sprintf("Unable to parse '%s'", p.currentToken().Kind.String()))
 	return nil
 }
 func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
@@ -138,6 +138,9 @@ func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 }
 func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	left := p.parseLeft()
+	if left == nil {
+		return nil
+	}
 	for !p.atEnd() && prec < p.peekPreced() {
 		p.consumeToken()
 		right, ok := p.parseInfix(left)

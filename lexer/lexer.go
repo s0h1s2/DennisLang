@@ -83,7 +83,7 @@ func (lex *Lexer) skipWhitespace() {
 	}
 }
 func (lex *Lexer) updateLine() {
-	if !lex.atEnd() && lex.src[lex.current] == '\n' {
+	for !lex.atEnd() && lex.src[lex.current] == '\n' {
 		lex.line += 1
 		lex.next()
 	}
@@ -109,7 +109,7 @@ func (lex *Lexer) getToken() Token {
 	// TODO: jesus christ this is really bad!
 	lex.skipWhitespace()
 	lex.updateLine()
-	lex.skipWhitespace()
+	// lex.skipWhitespace()
 	if lex.atEnd() {
 		return Token{Kind: TK_EOF}
 	}
@@ -150,7 +150,7 @@ func (lex *Lexer) getToken() Token {
 					result := lex.scanIdentOrKeyword()
 					return lex.makeToken(isKeyword(result), result)
 				}
-				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c'", lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
+				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c' with ascii code of '%d'", lex.src[lex.current], lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
 				lex.next()
 				return lex.makeToken(TK_ILLEGAL, "")
 			}
@@ -166,5 +166,6 @@ func (lex *Lexer) GetTokens(src []byte) []Token {
 		tokens = append(tokens, token)
 		token = lex.getToken()
 	}
+	tokens = append(tokens, lex.makeToken(TK_EOF, ""))
 	return tokens
 }
