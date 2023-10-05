@@ -151,8 +151,26 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	}
 	return left
 }
-
-func (p *Parser) Parse() ast.Expr {
+func (p *Parser) parseDeclarations() []ast.Decl {
+	decls := []ast.Decl{}
+	switch p.currentToken().Kind {
+	case lexer.TK_FN:
+		{
+			p.consumeToken()
+			decls = append(decls, p.parseFunction())
+		}
+	default:
+		{
+			p.reportHere(fmt.Sprintf("Unable to parse '%s' declaration", p.currentToken().String()))
+		}
+	}
+	return decls
+}
+func (p *Parser) parseFunction() *ast.DeclFunction {
+	return &ast.DeclFunction{}
+}
+func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")
-	return p.parseExpression(LOWEST)
+	//return p.parseExpression(LOWEST)
+	return p.parseDeclarations()
 }

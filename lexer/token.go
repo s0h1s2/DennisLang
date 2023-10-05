@@ -14,11 +14,18 @@ const (
 	TK_ILLEGAL
 	TK_SEMICOLON
 	TK_COLON
+	TK_OPENPARAN
+	TK_CLOSEPARAN
+	TK_OPENBRACE
+	TK_CLOSEBRACE
 	// KEYWORDS
 	keywords_begin
 	TK_LET
+	TK_FN
+	TK_RETURN
 	TK_IF
 	keywords_end
+
 	TK_EOF
 )
 
@@ -42,6 +49,18 @@ func (tk TokenKind) String() string {
 		return ";"
 	case TK_COLON:
 		return ":"
+	case TK_FN:
+		return "fn"
+	case TK_OPENPARAN:
+		return "("
+	case TK_CLOSEPARAN:
+		return ")"
+	case TK_OPENBRACE:
+		return "{"
+	case TK_CLOSEBRACE:
+		return "}"
+	case TK_RETURN:
+		return "return"
 	case TK_EOF:
 		return "EOF"
 

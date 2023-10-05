@@ -24,6 +24,7 @@ type Keyword = map[string]TokenKind
 var keywords Keyword = Keyword{
 	"if":  TK_IF,
 	"let": TK_LET,
+	"fn":  TK_FN,
 }
 
 func isKeyword(word string) TokenKind {
@@ -78,12 +79,12 @@ func (lex *Lexer) atEnd() bool {
 	return lex.current >= len(lex.src)
 }
 func (lex *Lexer) skipWhitespace() {
-	for !lex.atEnd() && (lex.src[lex.current] == ' ' || lex.src[lex.current] == '\t') {
+	for !lex.atEnd() && (lex.ch == ' ' || lex.ch == '\t') {
 		lex.next()
 	}
 }
 func (lex *Lexer) updateLine() {
-	for !lex.atEnd() && lex.src[lex.current] == '\n' {
+	for !lex.atEnd() && lex.ch == '\n' {
 		lex.line += 1
 		lex.next()
 	}
@@ -105,14 +106,14 @@ func (lex *Lexer) scanIdentOrKeyword() string {
 	return result
 }
 func (lex *Lexer) getToken() Token {
+start:
 	lex.start = lex.current
-	// TODO: jesus christ this is really bad!
-	lex.skipWhitespace()
 	lex.updateLine()
-	// lex.skipWhitespace()
+	lex.skipWhitespace()
 	if lex.atEnd() {
 		return Token{Kind: TK_EOF}
 	}
+
 	lex.ch = lex.src[lex.current]
 	for {
 		switch lex.ch {
@@ -131,6 +132,27 @@ func (lex *Lexer) getToken() Token {
 				lex.next()
 				return lex.makeToken(TK_ASSIGN, "")
 			}
+		case '(':
+			{
+				lex.next()
+				return lex.makeToken(TK_OPENPARAN, "")
+			}
+		case ')':
+			{
+				lex.next()
+				return lex.makeToken(TK_CLOSEPARAN, "")
+			}
+		case '{':
+			{
+				lex.next()
+				return lex.makeToken(TK_OPENBRACE, "")
+			}
+		case '}':
+			{
+				lex.next()
+				return lex.makeToken(TK_CLOSEBRACE, "")
+			}
+
 		case ':':
 			{
 				lex.next()
@@ -141,6 +163,7 @@ func (lex *Lexer) getToken() Token {
 				lex.next()
 				return lex.makeToken(TK_SEMICOLON, "")
 			}
+
 		default:
 			{
 				if lex.ch >= '0' && lex.ch <= '9' {
@@ -149,6 +172,8 @@ func (lex *Lexer) getToken() Token {
 				} else if isAlpha(lex.ch) || lex.ch == '_' {
 					result := lex.scanIdentOrKeyword()
 					return lex.makeToken(isKeyword(result), result)
+				} else if lex.ch == '\n' {
+					goto start
 				}
 				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c' with ascii code of '%d'", lex.src[lex.current], lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
 				lex.next()

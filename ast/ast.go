@@ -6,6 +6,16 @@ type Expr interface {
 	Node
 	exprNode()
 }
+type Decl interface {
+	Node
+	declNode()
+}
+type DeclFunction struct {
+	Name        string
+	RetTypeName string
+	Body        []Stmt
+	Ret         Expr
+}
 type Stmt interface {
 	Node
 	stmtNode()
@@ -16,6 +26,7 @@ type StmtLet struct {
 	Type string
 	Init Expr
 }
+
 type ExprBinary struct {
 	Left  Expr
 	Right Expr
@@ -34,8 +45,9 @@ type ExprInt struct {
 	Value string
 }
 
-func (e *ExprInt) exprNode()    {}
-func (e *ExprBinary) exprNode() {}
-func (e *ExprIdent) exprNode()  {}
-func (e *ExprAssign) exprNode() {}
-func (s *StmtLet) stmtNode()    {}
+func (e *DeclFunction) declNode() {}
+func (e *ExprInt) exprNode()      {}
+func (e *ExprBinary) exprNode()   {}
+func (e *ExprIdent) exprNode()    {}
+func (e *ExprAssign) exprNode()   {}
+func (s *StmtLet) stmtNode()      {}
