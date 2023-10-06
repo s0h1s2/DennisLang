@@ -6,6 +6,7 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
+	"github.com/s0h1s2/types"
 )
 
 type Parser struct {
@@ -35,11 +36,17 @@ func (p *Parser) currentToken() *lexer.Token {
 	}
 	return &p.tokens[len(p.tokens)]
 }
-func (p *Parser) matchToken(kind lexer.TokenKind) bool {
-	if kind == p.currentToken().Kind {
-		return true
+func (p *Parser) expectToken(kind lexer.TokenKind) *lexer.Token {
+	if p.matchToken(kind) {
+		token := p.currentToken()
+		p.consumeToken()
+		return token
 	}
-	return false
+	p.reportHere(fmt.Sprintf("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String()))
+	return &lexer.Token{Kind: lexer.TK_ILLEGAL}
+}
+func (p *Parser) matchToken(kind lexer.TokenKind) bool {
+	return kind == p.currentToken().Kind
 }
 func (p *Parser) consumeToken() {
 	if p.tokenIndex < len(p.tokens) {
@@ -151,23 +158,56 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	}
 	return left
 }
+func (p *Parser) parseBaseType() types.TypeSpec {
+	name := p.expectToken(lexer.TK_IDENT)
+	return &types.TypeName{Name: name.Literal}
+}
+func (p *Parser) parseType() types.TypeSpec {
+	var left types.TypeSpec
+	for p.matchToken(lexer.TK_STAR) {
+		p.consumeToken()
+		left = &types.TypePtr{Base: left}
+	}
+	if left != nil {
+		switch t := left.(type) {
+		case *types.TypePtr:
+			{
+				t.Base = p.parseBaseType()
+			}
+		}
+	} else {
+		left = p.parseBaseType()
+	}
+	return left
+}
+
 func (p *Parser) parseDeclarations() []ast.Decl {
 	decls := []ast.Decl{}
-	switch p.currentToken().Kind {
-	case lexer.TK_FN:
-		{
-			p.consumeToken()
-			decls = append(decls, p.parseFunction())
-		}
-	default:
-		{
-			p.reportHere(fmt.Sprintf("Unable to parse '%s' declaration", p.currentToken().String()))
+	for p.currentToken().Kind != lexer.TK_EOF {
+		switch p.currentToken().Kind {
+		case lexer.TK_FN:
+			{
+				p.consumeToken()
+				decls = append(decls, p.parseFunction())
+			}
+		default:
+			{
+				p.reportHere(fmt.Sprintf("Unable to parse '%s' declaration", p.currentToken().String()))
+			}
 		}
 	}
 	return decls
 }
 func (p *Parser) parseFunction() *ast.DeclFunction {
-	return &ast.DeclFunction{}
+	name := p.expectToken(lexer.TK_IDENT)
+	p.expectToken(lexer.TK_OPENPARAN)
+	p.expectToken(lexer.TK_CLOSEPARAN)
+	p.expectToken(lexer.TK_COLON)
+	typeResult := p.parseType()
+	p.expectToken(lexer.TK_OPENBRACE)
+	// parse statement
+	p.expectToken(lexer.TK_CLOSEBRACE)
+	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult}
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")

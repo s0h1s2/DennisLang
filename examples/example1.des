@@ -1,6 +1,5 @@
-fn main():i8 {
-  let a:i8=1;
-  let b:i8=1;
-  let c:i8=a+b*2;
-  return 0;
-} 
+fn name():*i8 {
+}
+fn main():u8{
+  
+}

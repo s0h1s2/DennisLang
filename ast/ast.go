@@ -1,5 +1,7 @@
 package ast
 
+import "github.com/s0h1s2/types"
+
 type Node interface{}
 
 type Expr interface {
@@ -10,11 +12,11 @@ type Decl interface {
 	Node
 	declNode()
 }
+type DeclBad struct{}
 type DeclFunction struct {
-	Name        string
-	RetTypeName string
-	Body        []Stmt
-	Ret         Expr
+	Name    string
+	RetType types.TypeSpec
+	Body    []Stmt
 }
 type Stmt interface {
 	Node
@@ -46,6 +48,7 @@ type ExprInt struct {
 }
 
 func (e *DeclFunction) declNode() {}
+func (e *DeclBad) declNode()      {}
 func (e *ExprInt) exprNode()      {}
 func (e *ExprBinary) exprNode()   {}
 func (e *ExprIdent) exprNode()    {}

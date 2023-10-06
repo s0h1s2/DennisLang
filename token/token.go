@@ -1,4 +1,4 @@
-package lexer
+package token
 
 import "fmt"
 import "github.com/s0h1s2/error"
