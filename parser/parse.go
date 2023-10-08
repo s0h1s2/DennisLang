@@ -43,7 +43,7 @@ func (p *Parser) expectToken(kind lexer.TokenKind) *lexer.Token {
 		return token
 	}
 	p.reportHere(fmt.Sprintf("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String()))
-	return &lexer.Token{Kind: lexer.TK_ILLEGAL}
+	return nil
 }
 func (p *Parser) matchToken(kind lexer.TokenKind) bool {
 	return kind == p.currentToken().Kind
@@ -86,7 +86,6 @@ func getPreced(token *lexer.Token) Precedence {
 
 }
 func (p *Parser) peekPreced() Precedence {
-
 	prec := getPreced(p.peekToken())
 	return prec
 }
@@ -158,6 +157,36 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	}
 	return left
 }
+func (p *Parser) parseVariableStmt() ast.Stmt {
+	name := p.expectToken(lexer.TK_IDENT)
+	p.expectToken(lexer.TK_COLON)
+	typeSpec := p.parseType()
+	var init ast.Expr
+	if p.matchToken(lexer.TK_ASSIGN) {
+		p.consumeToken()
+		init = p.parseExpression(LOWEST)
+		p.consumeToken()
+	}
+	p.expectToken(lexer.TK_SEMICOLON)
+	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init}
+}
+func (p *Parser) parseBlock() []ast.Stmt {
+	p.expectToken(lexer.TK_OPENBRACE)
+	stmts := []ast.Stmt{}
+	switch p.currentToken().Kind {
+	case lexer.TK_LET:
+		{
+			p.consumeToken()
+			stmts = append(stmts, p.parseVariableStmt())
+		}
+	default:
+		{
+			p.reportHere(fmt.Sprintf("Unable to parse '%s' statement", p.currentToken().Kind.String()))
+		}
+	}
+	p.expectToken(lexer.TK_CLOSEBRACE)
+	return stmts
+}
 func (p *Parser) parseBaseType() types.TypeSpec {
 	name := p.expectToken(lexer.TK_IDENT)
 	return &types.TypeName{Name: name.Literal}
@@ -178,6 +207,7 @@ func (p *Parser) parseType() types.TypeSpec {
 	} else {
 		left = p.parseBaseType()
 	}
+
 	return left
 }
 
@@ -193,6 +223,7 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 		default:
 			{
 				p.reportHere(fmt.Sprintf("Unable to parse '%s' declaration", p.currentToken().String()))
+				p.consumeToken()
 			}
 		}
 	}
@@ -204,10 +235,8 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	p.expectToken(lexer.TK_CLOSEPARAN)
 	p.expectToken(lexer.TK_COLON)
 	typeResult := p.parseType()
-	p.expectToken(lexer.TK_OPENBRACE)
-	// parse statement
-	p.expectToken(lexer.TK_CLOSEBRACE)
-	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult}
+	body := p.parseBlock()
+	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body}
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")

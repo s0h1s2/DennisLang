@@ -1,5 +1,4 @@
 fn name():*i8 {
+  let a:i8=1+a;
 }
-fn main():u8{
-  
-}
+

@@ -25,7 +25,7 @@ type Stmt interface {
 
 type StmtLet struct {
 	Name string
-	Type string
+	Type types.TypeSpec
 	Init Expr
 }
 

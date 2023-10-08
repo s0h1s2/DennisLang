@@ -317,11 +317,11 @@ func main() {
 		fmt.Println(token.String())
 	}
 	parser := parser.New(tokens, bag)
-	parser.Parse()
+	ast := parser.Parse()
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)
 	}
-	//printAst(ast)
+	println(ast)
 
 }
