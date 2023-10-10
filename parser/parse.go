@@ -173,15 +173,18 @@ func (p *Parser) parseVariableStmt() ast.Stmt {
 func (p *Parser) parseBlock() []ast.Stmt {
 	p.expectToken(lexer.TK_OPENBRACE)
 	stmts := []ast.Stmt{}
-	switch p.currentToken().Kind {
-	case lexer.TK_LET:
-		{
-			p.consumeToken()
-			stmts = append(stmts, p.parseVariableStmt())
-		}
-	default:
-		{
-			p.reportHere(fmt.Sprintf("Unable to parse '%s' statement", p.currentToken().Kind.String()))
+	for !p.atEnd() && p.currentToken().Kind != lexer.TK_CLOSEBRACE {
+		switch p.currentToken().Kind {
+		case lexer.TK_LET:
+			{
+				p.consumeToken()
+				stmts = append(stmts, p.parseVariableStmt())
+			}
+		default:
+			{
+				p.reportHere(fmt.Sprintf("Unable to parse '%s' statement", p.currentToken().Kind.String()))
+				p.consumeToken()
+			}
 		}
 	}
 	p.expectToken(lexer.TK_CLOSEBRACE)
@@ -240,6 +243,5 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")
-	//return p.parseExpression(LOWEST)
 	return p.parseDeclarations()
 }

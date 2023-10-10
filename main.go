@@ -268,6 +268,10 @@ func printAst(expr ast.Expr) {
 		}
 	}
 }
+func hello(n ast.Node) bool {
+	println(n)
+	return false
+}
 func main() {
 	// env := &Environment{env: make(map[string]Entry)}
 	// env.registerType("char", &EntryType{Typee: Type{Alignment: 1, Size: 1}})
@@ -317,11 +321,10 @@ func main() {
 		fmt.Println(token.String())
 	}
 	parser := parser.New(tokens, bag)
-	ast := parser.Parse()
+	tree := parser.Parse()
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)
 	}
-	println(ast)
-
+	ast.Inspect(tree[0], hello)
 }
