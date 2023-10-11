@@ -1,6 +1,7 @@
 package ast
 
 import "github.com/s0h1s2/types"
+import "github.com/s0h1s2/error"
 
 type Node interface{}
 
@@ -14,9 +15,11 @@ type Decl interface {
 }
 type DeclBad struct{}
 type DeclFunction struct {
+	Pos     error.Position
 	Name    string
 	RetType types.TypeSpec
 	Body    []Stmt
+	End     error.Position
 }
 type Stmt interface {
 	Node
@@ -24,6 +27,7 @@ type Stmt interface {
 }
 
 type StmtLet struct {
+	Pos  error.Position
 	Name string
 	Type types.TypeSpec
 	Init Expr
@@ -41,6 +45,7 @@ type ExprAssign struct {
 
 type ExprIdent struct {
 	Name string
+	Pos  error.Position
 }
 
 type ExprInt struct {

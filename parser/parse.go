@@ -68,7 +68,7 @@ func (p *Parser) reportHere(msg string) {
 	p.bag.ReportError(error.Error{Msg: msg, Pos: p.currentToken().Pos})
 }
 func (p *Parser) parseIdent() ast.Expr {
-	return &ast.ExprIdent{Name: p.currentToken().Literal}
+	return &ast.ExprIdent{Name: p.currentToken().Literal, Pos: p.currentToken().Pos}
 }
 func (p *Parser) parseInt() ast.Expr {
 	return &ast.ExprInt{Value: p.currentToken().Literal}
@@ -168,7 +168,7 @@ func (p *Parser) parseVariableStmt() ast.Stmt {
 		p.consumeToken()
 	}
 	p.expectToken(lexer.TK_SEMICOLON)
-	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init}
+	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init, Pos: name.Pos}
 }
 func (p *Parser) parseBlock() []ast.Stmt {
 	p.expectToken(lexer.TK_OPENBRACE)
@@ -239,7 +239,7 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	p.expectToken(lexer.TK_COLON)
 	typeResult := p.parseType()
 	body := p.parseBlock()
-	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body}
+	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")

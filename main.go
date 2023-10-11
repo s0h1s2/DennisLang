@@ -9,6 +9,7 @@ import (
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
 	"github.com/s0h1s2/parser"
+	"github.com/s0h1s2/resolver"
 )
 
 // import (
@@ -322,9 +323,10 @@ func main() {
 	}
 	parser := parser.New(tokens, bag)
 	tree := parser.Parse()
+	resolver.Resolve(tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)
 	}
-	ast.Inspect(tree[0], hello)
+
 }

@@ -1,5 +1,9 @@
 fn name():i8 {
-  let b:i8=1+a*2;
   let b:i8=1;
   let c:i8=1;
+  let d:i8=a+b;
+  a=b;
 }
+
+
+fn x():i8{}
