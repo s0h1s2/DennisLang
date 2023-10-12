@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/s0h1s2/error"
+	"github.com/s0h1s2/token"
 )
 
 type Lexer struct {
@@ -19,19 +20,19 @@ const (
 	EOF = 0
 )
 
-type Keyword = map[string]TokenKind
+type Keyword = map[string]token.TokenKind
 
 var keywords Keyword = Keyword{
-	"if":  TK_IF,
-	"let": TK_LET,
-	"fn":  TK_FN,
+	"if":  token.TK_IF,
+	"let": token.TK_LET,
+	"fn":  token.TK_FN,
 }
 
-func isKeyword(word string) TokenKind {
+func isKeyword(word string) token.TokenKind {
 	if value, ok := keywords[word]; ok {
 		return value
 	}
-	return TK_IDENT
+	return token.TK_IDENT
 }
 func isAlpha(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
@@ -68,8 +69,8 @@ func (lex *Lexer) next() {
 	}
 
 }
-func (lex *Lexer) makeToken(kind TokenKind, literal string) Token {
-	return Token{
+func (lex *Lexer) makeToken(kind token.TokenKind, literal string) token.Token {
+	return token.Token{
 		Kind:    kind,
 		Literal: literal,
 		Pos:     error.Position{Start: lex.current, End: lex.current, Line: lex.line},
@@ -105,13 +106,13 @@ func (lex *Lexer) scanIdentOrKeyword() string {
 	}
 	return result
 }
-func (lex *Lexer) getToken() Token {
+func (lex *Lexer) getToken() token.Token {
 start:
 	lex.start = lex.current
 	lex.updateLine()
 	lex.skipWhitespace()
 	if lex.atEnd() {
-		return Token{Kind: TK_EOF}
+		return token.Token{Kind: token.TK_EOF}
 	}
 
 	lex.ch = lex.src[lex.current]
@@ -120,55 +121,55 @@ start:
 		case '+':
 			{
 				lex.next()
-				return lex.makeToken(TK_PLUS, "")
+				return lex.makeToken(token.TK_PLUS, "")
 			}
 		case '*':
 			{
 				lex.next()
-				return lex.makeToken(TK_STAR, "")
+				return lex.makeToken(token.TK_STAR, "")
 			}
 		case '=':
 			{
 				lex.next()
-				return lex.makeToken(TK_ASSIGN, "")
+				return lex.makeToken(token.TK_ASSIGN, "")
 			}
 		case '(':
 			{
 				lex.next()
-				return lex.makeToken(TK_OPENPARAN, "")
+				return lex.makeToken(token.TK_OPENPARAN, "")
 			}
 		case ')':
 			{
 				lex.next()
-				return lex.makeToken(TK_CLOSEPARAN, "")
+				return lex.makeToken(token.TK_CLOSEPARAN, "")
 			}
 		case '{':
 			{
 				lex.next()
-				return lex.makeToken(TK_OPENBRACE, "")
+				return lex.makeToken(token.TK_OPENBRACE, "")
 			}
 		case '}':
 			{
 				lex.next()
-				return lex.makeToken(TK_CLOSEBRACE, "")
+				return lex.makeToken(token.TK_CLOSEBRACE, "")
 			}
 
 		case ':':
 			{
 				lex.next()
-				return lex.makeToken(TK_COLON, "")
+				return lex.makeToken(token.TK_COLON, "")
 			}
 		case ';':
 			{
 				lex.next()
-				return lex.makeToken(TK_SEMICOLON, "")
+				return lex.makeToken(token.TK_SEMICOLON, "")
 			}
 
 		default:
 			{
 				if lex.ch >= '0' && lex.ch <= '9' {
 					val := lex.scanInt()
-					return lex.makeToken(TK_INTEGER, string(val))
+					return lex.makeToken(token.TK_INTEGER, string(val))
 				} else if isAlpha(lex.ch) || lex.ch == '_' {
 					result := lex.scanIdentOrKeyword()
 					return lex.makeToken(isKeyword(result), result)
@@ -177,20 +178,20 @@ start:
 				}
 				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c' with ascii code of '%d'", lex.src[lex.current], lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
 				lex.next()
-				return lex.makeToken(TK_ILLEGAL, "")
+				return lex.makeToken(token.TK_ILLEGAL, "")
 			}
 		}
 	}
 }
-func (lex *Lexer) GetTokens(src []byte) []Token {
+func (lex *Lexer) GetTokens(src []byte) []token.Token {
 	lex.reset()
 	lex.src = src
-	token := lex.getToken()
-	tokens := []Token{}
-	for token.Kind != TK_EOF {
-		tokens = append(tokens, token)
-		token = lex.getToken()
+	tk := lex.getToken()
+	tokens := []token.Token{}
+	for tk.Kind != token.TK_EOF {
+		tokens = append(tokens, tk)
+		tk = lex.getToken()
 	}
-	tokens = append(tokens, lex.makeToken(TK_EOF, ""))
+	tokens = append(tokens, lex.makeToken(token.TK_EOF, ""))
 	return tokens
 }

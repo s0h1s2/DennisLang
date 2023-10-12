@@ -51,7 +51,14 @@ func resolver(node ast.Node, table *Table) {
 	case *ast.StmtLet:
 		{
 			table.declareVariable(n)
-			resolver(n.Init, table)
+			if n.Init != nil {
+				resolver(n.Init, table)
+			}
+		}
+	case *ast.StmtExpr:
+		{
+			resolver(n.Expr, table)
+
 		}
 	case *ast.ExprBinary:
 		{
@@ -62,6 +69,10 @@ func resolver(node ast.Node, table *Table) {
 		{
 			resolver(n.Left, table)
 			resolver(n.Right, table)
+		}
+	case *ast.ExprInt:
+		{
+
 		}
 	case *ast.ExprIdent:
 		{

@@ -5,12 +5,12 @@ import (
 
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
-	"github.com/s0h1s2/lexer"
+	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
 type Parser struct {
-	tokens     []lexer.Token
+	tokens     []token.Token
 	bag        *error.DiagnosticBag
 	tokenIndex int
 	inRHS      bool
@@ -24,19 +24,19 @@ const (
 	FACTOR
 )
 
-func (p *Parser) peekToken() *lexer.Token {
+func (p *Parser) peekToken() *token.Token {
 	if p.tokenIndex+1 < len(p.tokens) {
 		return &p.tokens[p.tokenIndex+1]
 	}
 	return &p.tokens[p.tokenIndex]
 }
-func (p *Parser) currentToken() *lexer.Token {
+func (p *Parser) currentToken() *token.Token {
 	if p.tokenIndex < len(p.tokens) {
 		return &p.tokens[p.tokenIndex]
 	}
 	return &p.tokens[len(p.tokens)]
 }
-func (p *Parser) expectToken(kind lexer.TokenKind) *lexer.Token {
+func (p *Parser) expectToken(kind token.TokenKind) *token.Token {
 	if p.matchToken(kind) {
 		token := p.currentToken()
 		p.consumeToken()
@@ -45,7 +45,7 @@ func (p *Parser) expectToken(kind lexer.TokenKind) *lexer.Token {
 	p.reportHere(fmt.Sprintf("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String()))
 	return nil
 }
-func (p *Parser) matchToken(kind lexer.TokenKind) bool {
+func (p *Parser) matchToken(kind token.TokenKind) bool {
 	return kind == p.currentToken().Kind
 }
 func (p *Parser) consumeToken() {
@@ -54,9 +54,9 @@ func (p *Parser) consumeToken() {
 	}
 }
 func (p *Parser) atEnd() bool {
-	return p.currentToken().Kind == lexer.TK_EOF
+	return p.currentToken().Kind == token.TK_EOF
 }
-func New(tokens []lexer.Token, bag *error.DiagnosticBag) *Parser {
+func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 	return &Parser{
 		tokens:     tokens,
 		bag:        bag,
@@ -73,13 +73,13 @@ func (p *Parser) parseIdent() ast.Expr {
 func (p *Parser) parseInt() ast.Expr {
 	return &ast.ExprInt{Value: p.currentToken().Literal}
 }
-func getPreced(token *lexer.Token) Precedence {
-	switch token.Kind {
-	case lexer.TK_PLUS:
+func getPreced(tk *token.Token) Precedence {
+	switch tk.Kind {
+	case token.TK_PLUS:
 		return TERM
-	case lexer.TK_STAR:
+	case token.TK_STAR:
 		return FACTOR
-	case lexer.TK_ASSIGN:
+	case token.TK_ASSIGN:
 		return ASSIGN
 	}
 	return LOWEST
@@ -99,11 +99,11 @@ func (p *Parser) currPreced() Precedence {
 
 func (p *Parser) parseLeft() ast.Expr {
 	switch p.currentToken().Kind {
-	case lexer.TK_IDENT:
+	case token.TK_IDENT:
 		{
 			return p.parseIdent()
 		}
-	case lexer.TK_INTEGER:
+	case token.TK_INTEGER:
 		{
 			return p.parseInt()
 		}
@@ -129,13 +129,13 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	switch p.currentToken().Kind {
-	case lexer.TK_PLUS:
+	case token.TK_PLUS:
 		fallthrough
-	case lexer.TK_STAR:
+	case token.TK_STAR:
 		{
 			return p.parseBinary(left), true
 		}
-	case lexer.TK_ASSIGN:
+	case token.TK_ASSIGN:
 		{
 			return p.parseAssignment(left), true
 		}
@@ -158,45 +158,46 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	return left
 }
 func (p *Parser) parseVariableStmt() ast.Stmt {
-	name := p.expectToken(lexer.TK_IDENT)
-	p.expectToken(lexer.TK_COLON)
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_COLON)
 	typeSpec := p.parseType()
 	var init ast.Expr
-	if p.matchToken(lexer.TK_ASSIGN) {
+	if p.matchToken(token.TK_ASSIGN) {
 		p.consumeToken()
 		init = p.parseExpression(LOWEST)
 		p.consumeToken()
 	}
-	p.expectToken(lexer.TK_SEMICOLON)
+	p.expectToken(token.TK_SEMICOLON)
 	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init, Pos: name.Pos}
 }
 func (p *Parser) parseBlock() []ast.Stmt {
-	p.expectToken(lexer.TK_OPENBRACE)
+	p.expectToken(token.TK_OPENBRACE)
 	stmts := []ast.Stmt{}
-	for !p.atEnd() && p.currentToken().Kind != lexer.TK_CLOSEBRACE {
+	for !p.atEnd() && p.currentToken().Kind != token.TK_CLOSEBRACE {
 		switch p.currentToken().Kind {
-		case lexer.TK_LET:
+		case token.TK_LET:
 			{
 				p.consumeToken()
 				stmts = append(stmts, p.parseVariableStmt())
 			}
 		default:
 			{
-				p.reportHere(fmt.Sprintf("Unable to parse '%s' statement", p.currentToken().Kind.String()))
+				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression(LOWEST)})
 				p.consumeToken()
+				p.expectToken(token.TK_SEMICOLON)
 			}
 		}
 	}
-	p.expectToken(lexer.TK_CLOSEBRACE)
+	p.expectToken(token.TK_CLOSEBRACE)
 	return stmts
 }
 func (p *Parser) parseBaseType() types.TypeSpec {
-	name := p.expectToken(lexer.TK_IDENT)
+	name := p.expectToken(token.TK_IDENT)
 	return &types.TypeName{Name: name.Literal}
 }
 func (p *Parser) parseType() types.TypeSpec {
 	var left types.TypeSpec
-	for p.matchToken(lexer.TK_STAR) {
+	for p.matchToken(token.TK_STAR) {
 		p.consumeToken()
 		left = &types.TypePtr{Base: left}
 	}
@@ -216,9 +217,9 @@ func (p *Parser) parseType() types.TypeSpec {
 
 func (p *Parser) parseDeclarations() []ast.Decl {
 	decls := []ast.Decl{}
-	for p.currentToken().Kind != lexer.TK_EOF {
+	for p.currentToken().Kind != token.TK_EOF {
 		switch p.currentToken().Kind {
-		case lexer.TK_FN:
+		case token.TK_FN:
 			{
 				p.consumeToken()
 				decls = append(decls, p.parseFunction())
@@ -233,10 +234,10 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 	return decls
 }
 func (p *Parser) parseFunction() *ast.DeclFunction {
-	name := p.expectToken(lexer.TK_IDENT)
-	p.expectToken(lexer.TK_OPENPARAN)
-	p.expectToken(lexer.TK_CLOSEPARAN)
-	p.expectToken(lexer.TK_COLON)
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_OPENPARAN)
+	p.expectToken(token.TK_CLOSEPARAN)
+	p.expectToken(token.TK_COLON)
 	typeResult := p.parseType()
 	body := p.parseBlock()
 	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}

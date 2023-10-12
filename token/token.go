@@ -29,43 +29,27 @@ const (
 	TK_EOF
 )
 
-func (tk TokenKind) String() string {
-	switch tk {
-	case TK_INTEGER:
-		return "integer"
-	case TK_ILLEGAL:
-		return "Illegal"
-	case TK_PLUS:
-		return "+"
-	case TK_STAR:
-		return "*"
-	case TK_ASSIGN:
-		return "="
-	case TK_IDENT:
-		return "identifier"
-	case TK_LET:
-		return "let"
-	case TK_SEMICOLON:
-		return ";"
-	case TK_COLON:
-		return ":"
-	case TK_FN:
-		return "fn"
-	case TK_OPENPARAN:
-		return "("
-	case TK_CLOSEPARAN:
-		return ")"
-	case TK_OPENBRACE:
-		return "{"
-	case TK_CLOSEBRACE:
-		return "}"
-	case TK_RETURN:
-		return "return"
-	case TK_EOF:
-		return "EOF"
+var tokenKindString = [...]string{
+	TK_ILLEGAL:    "illegal",
+	TK_INTEGER:    "integer",
+	TK_PLUS:       "+",
+	TK_STAR:       "*",
+	TK_ASSIGN:     "=",
+	TK_SEMICOLON:  ";",
+	TK_COLON:      ":",
+	TK_OPENPARAN:  "(",
+	TK_CLOSEPARAN: ")",
+	TK_OPENBRACE:  "{",
+	TK_CLOSEBRACE: "}",
+	TK_IDENT:      "identifier",
+	TK_RETURN:     "return",
+	TK_LET:        "let",
+	TK_FN:         "fn",
+	TK_EOF:        "EOF",
+}
 
-	}
-	panic("Unreachable or unimplemented one of TokenKind")
+func (tk TokenKind) String() string {
+	return tokenKindString[tk]
 }
 
 type Token struct {
