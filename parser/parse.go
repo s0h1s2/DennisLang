@@ -108,7 +108,6 @@ func (p *Parser) parseLeft() ast.Expr {
 			return p.parseInt()
 		}
 	}
-	p.reportHere(fmt.Sprintf("Unable to parse '%s'", p.currentToken().Kind.String()))
 	return nil
 }
 func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
@@ -157,6 +156,15 @@ func (p *Parser) parseExpression(prec Precedence) ast.Expr {
 	}
 	return left
 }
+func (p *Parser) parseReturn() ast.Stmt {
+	prevToken := p.currentToken()
+	result := p.parseExpression(LOWEST)
+	if result != nil {
+		p.consumeToken()
+	}
+	p.expectToken(token.TK_SEMICOLON)
+	return &ast.StmtReturn{Result: result, Pos: prevToken.Pos}
+}
 func (p *Parser) parseVariableStmt() ast.Stmt {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_COLON)
@@ -180,6 +188,11 @@ func (p *Parser) parseBlock() []ast.Stmt {
 				p.consumeToken()
 				stmts = append(stmts, p.parseVariableStmt())
 			}
+		case token.TK_RETURN:
+			{
+				p.consumeToken()
+				stmts = append(stmts, p.parseReturn())
+			}
 		default:
 			{
 				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression(LOWEST)})
@@ -193,6 +206,9 @@ func (p *Parser) parseBlock() []ast.Stmt {
 }
 func (p *Parser) parseBaseType() types.TypeSpec {
 	name := p.expectToken(token.TK_IDENT)
+	if name == nil {
+		return nil
+	}
 	return &types.TypeName{Name: name.Literal}
 }
 func (p *Parser) parseType() types.TypeSpec {

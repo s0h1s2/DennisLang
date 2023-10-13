@@ -23,9 +23,10 @@ const (
 type Keyword = map[string]token.TokenKind
 
 var keywords Keyword = Keyword{
-	"if":  token.TK_IF,
-	"let": token.TK_LET,
-	"fn":  token.TK_FN,
+	"if":     token.TK_IF,
+	"let":    token.TK_LET,
+	"fn":     token.TK_FN,
+	"return": token.TK_RETURN,
 }
 
 func isKeyword(word string) token.TokenKind {

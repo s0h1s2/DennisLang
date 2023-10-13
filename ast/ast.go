@@ -32,6 +32,11 @@ type StmtLet struct {
 	Type types.TypeSpec
 	Init Expr
 }
+type StmtReturn struct {
+	Pos    error.Position
+	Result Expr
+}
+
 type StmtExpr struct {
 	Pos  error.Position
 	Expr Expr
@@ -59,6 +64,7 @@ type ExprInt struct {
 func (e *DeclFunction) declNode() {}
 func (e *DeclBad) declNode()      {}
 func (s *StmtLet) stmtNode()      {}
+func (s *StmtReturn) stmtNode()   {}
 func (s *StmtExpr) stmtNode()     {}
 func (e *ExprInt) exprNode()      {}
 func (e *ExprBinary) exprNode()   {}
