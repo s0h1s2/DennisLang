@@ -323,10 +323,11 @@ func main() {
 	}
 	parser := parser.New(tokens, bag)
 	tree := parser.Parse()
-	resolver.Resolve(tree, bag)
+	table := resolver.Resolve(tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)
 	}
+	println(table)
 
 }

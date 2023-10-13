@@ -1,7 +1,9 @@
+fn parse_expr():*i8{
+  return 1;
+}
 fn main():i8{
   let b:i8=1;
-  let c:i8=1;
-  let d:i8=1;
+  let c:i16=1;
   return 1;
 }
 

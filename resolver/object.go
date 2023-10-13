@@ -15,7 +15,7 @@ const (
 
 type Object struct {
 	Kind ObjectKind
-	Decl ast.Decl
+	Node ast.Node
 	Type types.Type
 }
 

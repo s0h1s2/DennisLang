@@ -17,10 +17,9 @@ type Table struct {
 func InitTable() Table {
 	t := Table{symbols: make(map[string]*Object, 4)}
 	t.symbols["i8"] = newObj(TYPE)
-	t.symbols["i8"].Type = types.Type{Alignment: 1, Size: 1, Base: nil}
+	t.symbols["i8"].Type = *types.NewType(1, 1)
 	t.symbols["i16"] = newObj(TYPE)
-	t.symbols["i16"].Type = types.Type{Alignment: 2, Size: 2, Base: nil}
-
+	t.symbols["i16"].Type = *types.NewType(2, 2)
 	return t
 }
 
@@ -29,6 +28,9 @@ func (t *Table) declareFunction(ast *ast.DeclFunction) {
 		handler.ReportError(error.Error{Msg: fmt.Sprintf("Can't redeclare funciton '%s' more than once", ast.Name), Pos: ast.Pos})
 	}
 	t.symbols[ast.Name] = newObj(FN)
+}
+func (t *Table) getObj(name string) *Object {
+	return t.symbols[name]
 }
 func (t *Table) declareVariable(ast *ast.StmtLet) {
 	if _, ok := t.symbols[ast.Name]; ok {
@@ -41,9 +43,9 @@ func (t *Table) isVariableExist(ident *ast.ExprIdent) {
 		handler.ReportError(error.Error{Msg: fmt.Sprintf("Variable '%s' doesn't exist", ident.Name), Pos: ident.Pos})
 	}
 }
-func (t *Table) isTypeExist(typ types.TypeSpec) {
+func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 	if typ == nil {
-		return
+		return nil, false
 	}
 	switch ty := typ.(type) {
 	case *types.TypeName:
@@ -51,17 +53,28 @@ func (t *Table) isTypeExist(typ types.TypeSpec) {
 			val, ok := t.symbols[ty.Name]
 			if !ok {
 				handler.ReportError(error.Error{Msg: fmt.Sprintf("Type '%s' doesn't exist", ty.Name)})
-				return
+				return nil, true
 			}
 			if val.Kind != TYPE {
 				handler.ReportError(error.Error{Msg: fmt.Sprintf("'%s' must be a type", ty.Name)})
 			}
+			return &val.Type, true
+		}
+	case *types.TypePtr:
+		{
+			if base, ok := t.isTypeExist(ty.Base); ok {
+				ptr := types.NewType(8, 8)
+				ptr.Base = base
+				return ptr, true
 
+			}
 		}
 	}
+	return nil, false
 }
 
 func Resolve(ast []ast.Decl, bag *error.DiagnosticBag) *Table {
+	println("----RESOLVER----")
 	handler = bag
 	table := InitTable()
 	for _, decl := range ast {
@@ -74,7 +87,10 @@ func resolver(node ast.Node, table *Table) {
 	case *ast.DeclFunction:
 		{
 			table.declareFunction(n)
-			table.isTypeExist(n.RetType)
+			if typ, ok := table.isTypeExist(n.RetType); ok {
+				table.getObj(n.Name).Type = *typ
+				table.getObj(n.Name).Node = n
+			}
 			for _, stmt := range n.Body {
 				resolver(stmt, table)
 			}
@@ -82,7 +98,10 @@ func resolver(node ast.Node, table *Table) {
 	case *ast.StmtLet:
 		{
 			table.declareVariable(n)
-			table.isTypeExist(n.Type)
+			if typ, ok := table.isTypeExist(n.Type); ok {
+				table.getObj(n.Name).Type = *typ
+				table.getObj(n.Name).Node = n
+			}
 			if n.Init != nil {
 				resolver(n.Init, table)
 			}
