@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/s0h1s2/ast"
+	"github.com/s0h1s2/checker"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
 	"github.com/s0h1s2/parser"
@@ -324,6 +325,7 @@ func main() {
 	parser := parser.New(tokens, bag)
 	tree := parser.Parse()
 	table := resolver.Resolve(tree, bag)
+	checker.TypeChecker(table, tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		os.Exit(1)

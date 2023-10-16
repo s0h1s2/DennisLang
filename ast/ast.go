@@ -47,6 +47,7 @@ type ExprBinary struct {
 	Right Expr
 	Op    byte // [0:'+',1:'*']
 }
+
 type ExprAssign struct {
 	Left  Expr
 	Right Expr
@@ -56,9 +57,16 @@ type ExprIdent struct {
 	Name string
 	Pos  error.Position
 }
+type ExprAddrOf struct {
+	Pos   error.Position
+	Right Expr
+}
 
 type ExprInt struct {
 	Value string
+}
+type ExprBoolean struct {
+	Value bool
 }
 
 func (e *DeclFunction) declNode() {}
@@ -69,4 +77,6 @@ func (s *StmtExpr) stmtNode()     {}
 func (e *ExprInt) exprNode()      {}
 func (e *ExprBinary) exprNode()   {}
 func (e *ExprIdent) exprNode()    {}
+func (e *ExprAddrOf) exprNode()   {}
 func (e *ExprAssign) exprNode()   {}
+func (e *ExprBoolean) exprNode()  {}

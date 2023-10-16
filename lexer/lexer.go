@@ -27,6 +27,8 @@ var keywords Keyword = Keyword{
 	"let":    token.TK_LET,
 	"fn":     token.TK_FN,
 	"return": token.TK_RETURN,
+	"true":   token.TK_TRUE,
+	"false":  token.TK_FALSE,
 }
 
 func isKeyword(word string) token.TokenKind {
@@ -128,6 +130,11 @@ start:
 			{
 				lex.next()
 				return lex.makeToken(token.TK_STAR, "")
+			}
+		case '&':
+			{
+				lex.next()
+				return lex.makeToken(token.TK_AND, "")
 			}
 		case '=':
 			{

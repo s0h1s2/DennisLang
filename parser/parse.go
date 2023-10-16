@@ -96,7 +96,13 @@ func (p *Parser) currPreced() Precedence {
 	}
 	return prec
 }
-
+func (p *Parser) parseBoolean() ast.Expr {
+	val := false
+	if p.currentToken().Kind == token.TK_TRUE {
+		val = true
+	}
+	return &ast.ExprBoolean{Value: val}
+}
 func (p *Parser) parseLeft() ast.Expr {
 	switch p.currentToken().Kind {
 	case token.TK_IDENT:
@@ -107,8 +113,26 @@ func (p *Parser) parseLeft() ast.Expr {
 		{
 			return p.parseInt()
 		}
+	case token.TK_AND:
+		{
+			return p.parseAddrOf()
+		}
+	case token.TK_FALSE:
+		fallthrough
+	case token.TK_TRUE:
+		{
+			return p.parseBoolean()
+		}
+
 	}
 	return nil
+}
+func (p *Parser) parseAddrOf() ast.Expr {
+	p.consumeToken()
+	right := p.parseExpression(LOWEST)
+	return &ast.ExprAddrOf{
+		Right: right,
+	}
 }
 func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
 	preced := p.currPreced()

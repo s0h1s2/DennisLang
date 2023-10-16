@@ -11,6 +11,7 @@ const (
 	TK_ASSIGN
 	TK_PLUS
 	TK_STAR
+	TK_AND
 	TK_ILLEGAL
 	TK_SEMICOLON
 	TK_COLON
@@ -24,6 +25,8 @@ const (
 	TK_FN
 	TK_RETURN
 	TK_IF
+	TK_TRUE
+	TK_FALSE
 	keywords_end
 
 	TK_EOF
@@ -31,7 +34,6 @@ const (
 
 var tokenKindString = [...]string{
 	TK_ILLEGAL:    "illegal",
-	TK_INTEGER:    "integer",
 	TK_PLUS:       "+",
 	TK_STAR:       "*",
 	TK_ASSIGN:     "=",
@@ -41,10 +43,14 @@ var tokenKindString = [...]string{
 	TK_CLOSEPARAN: ")",
 	TK_OPENBRACE:  "{",
 	TK_CLOSEBRACE: "}",
+	TK_AND:        "&",
+	TK_INTEGER:    "integer",
 	TK_IDENT:      "identifier",
 	TK_RETURN:     "return",
 	TK_LET:        "let",
 	TK_FN:         "fn",
+	TK_TRUE:       "true",
+	TK_FALSE:      "false",
 	TK_EOF:        "EOF",
 }
 

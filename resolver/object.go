@@ -16,7 +16,7 @@ const (
 type Object struct {
 	Kind ObjectKind
 	Node ast.Node
-	Type types.Type
+	Type *types.Type
 }
 
 func newObj(kind ObjectKind) *Object {

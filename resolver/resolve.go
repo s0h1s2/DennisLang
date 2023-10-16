@@ -17,19 +17,23 @@ type Table struct {
 func InitTable() Table {
 	t := Table{symbols: make(map[string]*Object, 4)}
 	t.symbols["i8"] = newObj(TYPE)
-	t.symbols["i8"].Type = *types.NewType(1, 1)
+	t.symbols["i8"].Type = types.NewType(types.TYPE_INT, 1, 1)
 	t.symbols["i16"] = newObj(TYPE)
-	t.symbols["i16"].Type = *types.NewType(2, 2)
+	t.symbols["i16"].Type = types.NewType(types.TYPE_INT, 2, 2)
+	t.symbols["bool"] = newObj(TYPE)
+	t.symbols["bool"].Type = types.NewType(types.TYPE_BOOL, 1, 1)
+	t.symbols["void"] = newObj(TYPE)
+	t.symbols["void"].Type = types.NewType(types.TYPE_VOID, 0, 0)
+
 	return t
 }
-
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
 	if _, ok := t.symbols[ast.Name]; ok {
 		handler.ReportError(error.Error{Msg: fmt.Sprintf("Can't redeclare funciton '%s' more than once", ast.Name), Pos: ast.Pos})
 	}
 	t.symbols[ast.Name] = newObj(FN)
 }
-func (t *Table) getObj(name string) *Object {
+func (t *Table) GetObj(name string) *Object {
 	return t.symbols[name]
 }
 func (t *Table) declareVariable(ast *ast.StmtLet) {
@@ -58,12 +62,12 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 			if val.Kind != TYPE {
 				handler.ReportError(error.Error{Msg: fmt.Sprintf("'%s' must be a type", ty.Name)})
 			}
-			return &val.Type, true
+			return val.Type, true
 		}
 	case *types.TypePtr:
 		{
 			if base, ok := t.isTypeExist(ty.Base); ok {
-				ptr := types.NewType(8, 8)
+				ptr := types.NewType(types.TYPE_PTR, 8, 8)
 				ptr.Base = base
 				return ptr, true
 
@@ -88,8 +92,8 @@ func resolver(node ast.Node, table *Table) {
 		{
 			table.declareFunction(n)
 			if typ, ok := table.isTypeExist(n.RetType); ok {
-				table.getObj(n.Name).Type = *typ
-				table.getObj(n.Name).Node = n
+				table.GetObj(n.Name).Type = typ
+				table.GetObj(n.Name).Node = n
 			}
 			for _, stmt := range n.Body {
 				resolver(stmt, table)
@@ -99,8 +103,8 @@ func resolver(node ast.Node, table *Table) {
 		{
 			table.declareVariable(n)
 			if typ, ok := table.isTypeExist(n.Type); ok {
-				table.getObj(n.Name).Type = *typ
-				table.getObj(n.Name).Node = n
+				table.GetObj(n.Name).Type = typ
+				table.GetObj(n.Name).Node = n
 			}
 			if n.Init != nil {
 				resolver(n.Init, table)
@@ -125,6 +129,9 @@ func resolver(node ast.Node, table *Table) {
 	case *ast.ExprInt:
 		{
 
+		}
+	case *ast.ExprBoolean:
+		{
 		}
 	case *ast.ExprIdent:
 		{
