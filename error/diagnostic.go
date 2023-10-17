@@ -6,7 +6,7 @@ type DiagnosticBag struct {
 
 func New() *DiagnosticBag {
 	return &DiagnosticBag{
-		errors: make([]Error, 0),
+		errors: make([]Error, 0, 4),
 	}
 }
 func (bag *DiagnosticBag) ReportError(err Error) {

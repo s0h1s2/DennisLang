@@ -139,6 +139,10 @@ start:
 		case '=':
 			{
 				lex.next()
+				if lex.ch == '=' {
+					lex.next()
+					return lex.makeToken(token.TK_EQUAL, "")
+				}
 				return lex.makeToken(token.TK_ASSIGN, "")
 			}
 		case '(':

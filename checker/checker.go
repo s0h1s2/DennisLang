@@ -15,17 +15,25 @@ func TypeChecker(table *resolver.Table, decls []ast.Decl, bag *error.DiagnosticB
 	symTable = table
 	handler = bag
 	for _, decl := range decls {
-		checker(decl)
+		checker(decl, nil)
 	}
 }
-func checker(node ast.Node) *types.Type {
+func checker(node ast.Node, expectedType *types.Type) *types.Type {
 	switch n := node.(type) {
 	case *ast.DeclFunction:
 		{
 			for _, stmt := range n.Body {
-				checker(stmt)
+				checker(stmt, symTable.GetObj(n.Name).Type)
 			}
 			return nil
+		}
+	case *ast.StmtReturn:
+		{
+			resultType := exprChecker(n.Result, expectedType)
+			if expectedType.Kind != resultType.Kind {
+				handler.ReportError(error.Error{Msg: "function return type is wrong"})
+			}
+			return resultType
 		}
 	case *ast.StmtLet:
 		{
@@ -38,6 +46,7 @@ func checker(node ast.Node) *types.Type {
 			}
 		}
 	}
+
 	return nil
 }
 func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
@@ -59,7 +68,11 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 		{
 			left := exprChecker(n.Left, expectedType)
 			right := exprChecker(n.Right, expectedType)
-			if left.TypeId != right.TypeId {
+			if right.Kind != types.TYPE_INT {
+				handler.ReportError(error.Error{Msg: "Arithmetic operations for integers only"})
+				return left
+			}
+			if left.Kind != types.TYPE_INT || left.TypeId != right.TypeId {
 				handler.ReportError(error.Error{Msg: "Types aren't equal"})
 			}
 			return right

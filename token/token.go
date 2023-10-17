@@ -19,6 +19,7 @@ const (
 	TK_CLOSEPARAN
 	TK_OPENBRACE
 	TK_CLOSEBRACE
+	TK_EQUAL
 	// KEYWORDS
 	keywords_begin
 	TK_LET
@@ -44,6 +45,7 @@ var tokenKindString = [...]string{
 	TK_OPENBRACE:  "{",
 	TK_CLOSEBRACE: "}",
 	TK_AND:        "&",
+	TK_EQUAL:      "==",
 	TK_INTEGER:    "integer",
 	TK_IDENT:      "identifier",
 	TK_RETURN:     "return",

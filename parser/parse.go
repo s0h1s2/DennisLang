@@ -42,7 +42,7 @@ func (p *Parser) expectToken(kind token.TokenKind) *token.Token {
 		p.consumeToken()
 		return token
 	}
-	p.reportHere(fmt.Sprintf("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String()))
+	p.reportHere("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String())
 	return nil
 }
 func (p *Parser) matchToken(kind token.TokenKind) bool {
@@ -64,7 +64,8 @@ func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 		inRHS:      false,
 	}
 }
-func (p *Parser) reportHere(msg string) {
+func (p *Parser) reportHere(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
 	p.bag.ReportError(error.Error{Msg: msg, Pos: p.currentToken().Pos})
 }
 func (p *Parser) parseIdent() ast.Expr {
@@ -128,26 +129,30 @@ func (p *Parser) parseLeft() ast.Expr {
 	return nil
 }
 func (p *Parser) parseAddrOf() ast.Expr {
+	prevToken := p.currentToken()
 	p.consumeToken()
 	right := p.parseExpression(LOWEST)
 	return &ast.ExprAddrOf{
+		Pos:   prevToken.Pos,
 		Right: right,
 	}
 }
 func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
 	preced := p.currPreced()
+	currentToken := p.currentToken()
 	p.consumeToken()
 	right := p.parseExpression(preced)
-	return &ast.ExprBinary{Left: left, Right: right, Op: 1}
+	return &ast.ExprBinary{Left: left, Right: right, Op: 1, Pos: currentToken.Pos}
 }
 func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 	old := p.inRHS
 	p.inRHS = true
+	currentToken := p.currentToken()
 	preced := p.currPreced()
 	p.consumeToken()
 	right := p.parseExpression(preced)
 	p.inRHS = old
-	return &ast.ExprAssign{Left: left, Right: right}
+	return &ast.ExprAssign{Left: left, Right: right, Pos: currentToken.Pos}
 }
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
@@ -233,13 +238,14 @@ func (p *Parser) parseBaseType() types.TypeSpec {
 	if name == nil {
 		return nil
 	}
-	return &types.TypeName{Name: name.Literal}
+	return &types.TypeName{Name: name.Literal, Pos: name.Pos}
 }
 func (p *Parser) parseType() types.TypeSpec {
 	var left types.TypeSpec
+	prevToken := p.currentToken()
 	for p.matchToken(token.TK_STAR) {
 		p.consumeToken()
-		left = &types.TypePtr{Base: left}
+		left = &types.TypePtr{Base: left, Pos: prevToken.Pos}
 	}
 	if left != nil {
 		switch t := left.(type) {
@@ -266,7 +272,7 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 			}
 		default:
 			{
-				p.reportHere(fmt.Sprintf("Unable to parse '%s' declaration", p.currentToken().String()))
+				p.reportHere("Unable to parse '%s' declaration", p.currentToken().String())
 				p.consumeToken()
 			}
 		}

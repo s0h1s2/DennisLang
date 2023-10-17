@@ -322,14 +322,23 @@ func main() {
 	for _, token := range tokens {
 		fmt.Println(token.String())
 	}
+	// Passes
 	parser := parser.New(tokens, bag)
 	tree := parser.Parse()
+	if bag.GotErrors() {
+		bag.PrintErrors()
+		return
+	}
+
 	table := resolver.Resolve(tree, bag)
+	if bag.GotErrors() {
+		bag.PrintErrors()
+		return
+	}
 	checker.TypeChecker(table, tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
-		os.Exit(1)
+		return
 	}
-	println(table)
 
 }

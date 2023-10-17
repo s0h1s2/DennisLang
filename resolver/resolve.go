@@ -10,6 +10,21 @@ import (
 
 var handler *error.DiagnosticBag
 
+func fatalError(n interface{}, format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	switch t := n.(type) {
+	case ast.Node:
+		{
+			handler.ReportError(error.Error{Msg: msg, Pos: t.GetPos()})
+		}
+	case types.TypeSpec:
+		{
+
+			handler.ReportError(error.Error{Msg: msg, Pos: t.GetPos()})
+		}
+	}
+}
+
 type Table struct {
 	symbols map[string]*Object
 }
@@ -29,7 +44,7 @@ func InitTable() Table {
 }
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
 	if _, ok := t.symbols[ast.Name]; ok {
-		handler.ReportError(error.Error{Msg: fmt.Sprintf("Can't redeclare funciton '%s' more than once", ast.Name), Pos: ast.Pos})
+		fatalError(ast, "Can't redeclare funciton '%s' more than once", ast.Name)
 	}
 	t.symbols[ast.Name] = newObj(FN)
 }
@@ -38,13 +53,13 @@ func (t *Table) GetObj(name string) *Object {
 }
 func (t *Table) declareVariable(ast *ast.StmtLet) {
 	if _, ok := t.symbols[ast.Name]; ok {
-		handler.ReportError(error.Error{Msg: fmt.Sprintf("Can't redeclare variable '%s' more than once", ast.Name), Pos: ast.Pos})
+		fatalError(ast, "Can't redeclare variable '%s' more than once", ast.Name)
 	}
 	t.symbols[ast.Name] = newObj(VAR)
 }
 func (t *Table) isVariableExist(ident *ast.ExprIdent) {
 	if _, ok := t.symbols[ident.Name]; !ok {
-		handler.ReportError(error.Error{Msg: fmt.Sprintf("Variable '%s' doesn't exist", ident.Name), Pos: ident.Pos})
+		fatalError(ident, "Variable '%s' doesn't exist", ident.Name)
 	}
 }
 func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
@@ -56,11 +71,11 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 		{
 			val, ok := t.symbols[ty.Name]
 			if !ok {
-				handler.ReportError(error.Error{Msg: fmt.Sprintf("Type '%s' doesn't exist", ty.Name)})
+				fatalError(typ, "Type '%s' doesn't exist", ty.Name)
 				return nil, true
 			}
 			if val.Kind != TYPE {
-				handler.ReportError(error.Error{Msg: fmt.Sprintf("'%s' must be a type", ty.Name)})
+				fatalError(typ, "'%s' must be a type", ty.Name)
 			}
 			return val.Type, true
 		}
