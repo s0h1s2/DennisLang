@@ -55,7 +55,7 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 			if n.Init != nil {
 				typeResult := exprChecker(n.Init, obj.Type)
 				if obj.Type.TypeId != typeResult.TypeId {
-					handler.ReportError(pos, "Expected '%s' type but got '%s' type", expectedType.TypeName, typeResult.TypeName)
+					handler.ReportError(pos, "Expected '%s' type but got '%s' type", obj.Type.TypeName, typeResult.TypeName)
 				}
 			}
 		}
@@ -85,6 +85,16 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 			right := exprChecker(n.Left, expectedType)
 			if left.TypeId != right.TypeId {
 				handler.ReportError(pos, "Expected '%s' but got '%s' when assign variable", left.TypeName, right.TypeName)
+			}
+		}
+	case *ast.ExprAddrOf:
+		{
+			if expectedType.Kind == types.TYPE_PTR {
+				typeResult := exprChecker(n.Right, expectedType.Base)
+				if typeResult.TypeId != expectedType.Base.TypeId {
+					handler.ReportError(pos, "Expected '%s' to point to '%s' but it is pointing to '%s' ", expectedType.TypeName, expectedType.Base.TypeName, typeResult.TypeName)
+				}
+				return expectedType
 			}
 		}
 	case *ast.ExprBinary:

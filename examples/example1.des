@@ -5,7 +5,7 @@ fn typechecking():i8{
   let d:i64=1;
   let e:bool=true;
   let f:bool=false;
-  let g:*i32=&a;
+  let g:*i32=&c+12;
 }
 fn main():i16{
   return 1;

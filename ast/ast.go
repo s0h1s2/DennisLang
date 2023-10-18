@@ -44,11 +44,20 @@ type StmtExpr struct {
 	Expr Expr
 }
 
+type BinaryOpKind byte
+
+const (
+	BIOP_ADD BinaryOpKind = iota
+	BIOP_SUB
+	BIOP_MUL
+	BIOP_DIV
+)
+
 type ExprBinary struct {
 	Pos   error.Position
 	Left  Expr
 	Right Expr
-	Op    byte // [0:'+',1:'*']
+	Op    BinaryOpKind
 }
 
 type ExprAssign struct {
