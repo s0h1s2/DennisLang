@@ -335,6 +335,7 @@ func main() {
 		bag.PrintErrors()
 		return
 	}
+	println("Type Checking!")
 	checker.TypeChecker(table, tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()

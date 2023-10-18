@@ -19,6 +19,7 @@ func TypeChecker(table *resolver.Table, decls []ast.Decl, bag *error.DiagnosticB
 	}
 }
 func checker(node ast.Node, expectedType *types.Type) *types.Type {
+	pos := node.GetPos()
 	switch n := node.(type) {
 	case *ast.DeclFunction:
 		{
@@ -30,8 +31,8 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 	case *ast.StmtReturn:
 		{
 			resultType := exprChecker(n.Result, expectedType)
-			if expectedType.Kind != resultType.Kind {
-				handler.ReportError(error.Error{Msg: "function return type is wrong"})
+			if resultType == nil || expectedType.Kind != resultType.Kind {
+				handler.ReportError(pos, "Expected '%s' type but got '%s' in return statement", "type1", "type2")
 			}
 			return resultType
 		}
@@ -41,7 +42,6 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 			if n.Init != nil {
 				typ := exprChecker(n.Init, obj.Type)
 				if obj.Type.TypeId != typ.TypeId {
-					handler.ReportError(error.Error{Msg: "Types aren't equal"})
 				}
 			}
 		}
@@ -50,6 +50,7 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 	return nil
 }
 func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
+	pos := expr.GetPos()
 	var typeResult *types.Type = nil
 	switch n := expr.(type) {
 	case *ast.ExprInt:
@@ -68,12 +69,12 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 		{
 			left := exprChecker(n.Left, expectedType)
 			right := exprChecker(n.Right, expectedType)
-			if right.Kind != types.TYPE_INT {
-				handler.ReportError(error.Error{Msg: "Arithmetic operations for integers only"})
+			if left.Kind != types.TYPE_INT {
+				handler.ReportError(pos, "Only integers can be '+' or '*'")
 				return left
 			}
 			if left.Kind != types.TYPE_INT || left.TypeId != right.TypeId {
-				handler.ReportError(error.Error{Msg: "Types aren't equal"})
+				handler.ReportError(pos, "")
 			}
 			return right
 		}

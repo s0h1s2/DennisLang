@@ -1,8 +1,6 @@
 package lexer
 
 import (
-	"fmt"
-
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
 )
@@ -188,7 +186,7 @@ start:
 				} else if lex.ch == '\n' {
 					goto start
 				}
-				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c' with ascii code of '%d'", lex.src[lex.current], lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
+				lex.errors.ReportError(error.Position{Line: lex.line, Start: lex.start, End: lex.current}, "Illegal token '%c' with ascii code of '%d'", lex.ch, lex.ch)
 				lex.next()
 				return lex.makeToken(token.TK_ILLEGAL, "")
 			}

@@ -1,8 +1,6 @@
 package parser
 
 import (
-	"fmt"
-
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
@@ -65,8 +63,7 @@ func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 	}
 }
 func (p *Parser) reportHere(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	p.bag.ReportError(error.Error{Msg: msg, Pos: p.currentToken().Pos})
+	p.bag.ReportError(p.currentToken().Pos, format, args...)
 }
 func (p *Parser) parseIdent() ast.Expr {
 	return &ast.ExprIdent{Name: p.currentToken().Literal, Pos: p.currentToken().Pos}

@@ -1,29 +1,12 @@
 package resolver
 
 import (
-	"fmt"
-
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/types"
 )
 
 var handler *error.DiagnosticBag
-
-func fatalError(n interface{}, format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	switch t := n.(type) {
-	case ast.Node:
-		{
-			handler.ReportError(error.Error{Msg: msg, Pos: t.GetPos()})
-		}
-	case types.TypeSpec:
-		{
-
-			handler.ReportError(error.Error{Msg: msg, Pos: t.GetPos()})
-		}
-	}
-}
 
 type Table struct {
 	symbols map[string]*Object
@@ -44,7 +27,8 @@ func InitTable() Table {
 }
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
 	if _, ok := t.symbols[ast.Name]; ok {
-		fatalError(ast, "Can't redeclare funciton '%s' more than once", ast.Name)
+		pos := ast.GetPos()
+		handler.ReportError(pos, "Can't redeclare funciton '%s' more than once", ast.Name)
 	}
 	t.symbols[ast.Name] = newObj(FN)
 }
@@ -53,29 +37,33 @@ func (t *Table) GetObj(name string) *Object {
 }
 func (t *Table) declareVariable(ast *ast.StmtLet) {
 	if _, ok := t.symbols[ast.Name]; ok {
-		fatalError(ast, "Can't redeclare variable '%s' more than once", ast.Name)
+		pos := ast.GetPos()
+		handler.ReportError(pos, "Can't redeclare variable '%s' more than once", ast.Name)
 	}
 	t.symbols[ast.Name] = newObj(VAR)
 }
 func (t *Table) isVariableExist(ident *ast.ExprIdent) {
 	if _, ok := t.symbols[ident.Name]; !ok {
-		fatalError(ident, "Variable '%s' doesn't exist", ident.Name)
+		pos := ident.GetPos()
+		handler.ReportError(pos, "Variable '%s' doesn't exist", ident.Name)
 	}
 }
 func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 	if typ == nil {
 		return nil, false
 	}
+
+	pos := typ.GetPos()
 	switch ty := typ.(type) {
 	case *types.TypeName:
 		{
 			val, ok := t.symbols[ty.Name]
 			if !ok {
-				fatalError(typ, "Type '%s' doesn't exist", ty.Name)
+				handler.ReportError(pos, "Type '%s' doesn't exist", ty.Name)
 				return nil, true
 			}
 			if val.Kind != TYPE {
-				fatalError(typ, "'%s' must be a type", ty.Name)
+				handler.ReportError(pos, "'%s' must be a type", ty.Name)
 			}
 			return val.Type, true
 		}
