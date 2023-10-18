@@ -1,5 +1,5 @@
-
-fn main():i64{
-  let a:bool=1+2;
-  return false;
+fn main():i16{
+  let b:i8=12;
+  let a:i8=1+b;
+  return 1;
 }

@@ -30,9 +30,17 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 		}
 	case *ast.StmtReturn:
 		{
+			if n.Result != nil && expectedType.Kind == types.TYPE_VOID {
+				handler.ReportError(pos, "function shouldn't retrun becuase type is void")
+				return nil
+			}
+			if n.Result == nil {
+				handler.ReportError(pos, "Expected '%s' but got void in return", expectedType.TypeName)
+				return nil
+			}
 			resultType := exprChecker(n.Result, expectedType)
-			if resultType == nil || expectedType.Kind != resultType.Kind {
-				handler.ReportError(pos, "Expected '%s' type but got '%s' in return statement", "type1", "type2")
+			if expectedType.Kind != resultType.Kind {
+				handler.ReportError(pos, "Expected '%s' type but got '%s' in return statement", expectedType.TypeName, resultType.TypeName)
 			}
 			return resultType
 		}
@@ -73,8 +81,8 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 				handler.ReportError(pos, "Only integers can be '+' or '*'")
 				return left
 			}
-			if left.Kind != types.TYPE_INT || left.TypeId != right.TypeId {
-				handler.ReportError(pos, "")
+			if left.TypeId != right.TypeId {
+				handler.ReportError(pos, "Expected '%s' but go '%s' ", left.TypeName, right.TypeName)
 			}
 			return right
 		}
@@ -83,6 +91,7 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 		if typeResult.Kind == expectedType.Kind {
 			return expectedType
 		}
+		return typeResult
 	}
 	return symTable.GetObj("void").Type
 }
