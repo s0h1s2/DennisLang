@@ -12,6 +12,7 @@ var declerations []ast.Decl
 var handler *error.DiagnosticBag
 
 func TypeChecker(table *resolver.Table, decls []ast.Decl, bag *error.DiagnosticBag) {
+	println("----TYPECHECKER----")
 	symTable = table
 	handler = bag
 	for _, decl := range decls {
@@ -31,11 +32,11 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 	case *ast.StmtReturn:
 		{
 			if n.Result != nil && expectedType.Kind == types.TYPE_VOID {
-				handler.ReportError(pos, "function shouldn't retrun becuase type is void")
+				handler.ReportError(pos, "function shouldn't return becuase type is void")
 				return nil
 			}
 			if n.Result == nil {
-				handler.ReportError(pos, "Expected '%s' but got void in return", expectedType.TypeName)
+				handler.ReportError(pos, "Expected '%s' but got expression is empty", expectedType.TypeName)
 				return nil
 			}
 			resultType := exprChecker(n.Result, expectedType)
@@ -47,9 +48,14 @@ func checker(node ast.Node, expectedType *types.Type) *types.Type {
 	case *ast.StmtLet:
 		{
 			obj := symTable.GetObj(n.Name)
+			if obj.Type.Kind == types.TYPE_VOID {
+				handler.ReportError(pos, "Binding variable '%s' to 'void' type is not permitted", n.Name)
+				return obj.Type
+			}
 			if n.Init != nil {
-				typ := exprChecker(n.Init, obj.Type)
-				if obj.Type.TypeId != typ.TypeId {
+				typeResult := exprChecker(n.Init, obj.Type)
+				if obj.Type.TypeId != typeResult.TypeId {
+					handler.ReportError(pos, "Expected '%s' type but got '%s' type", expectedType.TypeName, typeResult.TypeName)
 				}
 			}
 		}
@@ -72,6 +78,14 @@ func exprChecker(expr ast.Expr, expectedType *types.Type) *types.Type {
 	case *ast.ExprIdent:
 		{
 			return symTable.GetObj(n.Name).Type
+		}
+	case *ast.ExprAssign:
+		{
+			left := exprChecker(n.Left, expectedType)
+			right := exprChecker(n.Left, expectedType)
+			if left.TypeId != right.TypeId {
+				handler.ReportError(pos, "Expected '%s' but got '%s' when assign variable", left.TypeName, right.TypeName)
+			}
 		}
 	case *ast.ExprBinary:
 		{

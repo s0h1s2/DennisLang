@@ -18,6 +18,12 @@ func InitTable() Table {
 	t.symbols["i8"].Type = types.NewType("i8", types.TYPE_INT, 1, 1)
 	t.symbols["i16"] = newObj(TYPE)
 	t.symbols["i16"].Type = types.NewType("i16", types.TYPE_INT, 2, 2)
+
+	t.symbols["i32"] = newObj(TYPE)
+	t.symbols["i32"].Type = types.NewType("i32", types.TYPE_INT, 4, 4)
+	t.symbols["i64"] = newObj(TYPE)
+	t.symbols["i64"].Type = types.NewType("i64", types.TYPE_INT, 8, 8)
+
 	t.symbols["bool"] = newObj(TYPE)
 	t.symbols["bool"].Type = types.NewType("bool", types.TYPE_BOOL, 1, 1)
 	t.symbols["void"] = newObj(TYPE)
@@ -70,10 +76,9 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 	case *types.TypePtr:
 		{
 			if base, ok := t.isTypeExist(ty.Base); ok {
-				ptr := types.NewType("ptr", types.TYPE_PTR, 8, 8)
+				ptr := types.NewType("*"+base.TypeName, types.TYPE_PTR, 8, 8)
 				ptr.Base = base
 				return ptr, true
-
 			}
 		}
 	}
