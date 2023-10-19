@@ -74,7 +74,7 @@ func (lex *Lexer) makeToken(kind token.TokenKind, literal string) token.Token {
 	return token.Token{
 		Kind:    kind,
 		Literal: literal,
-		Pos:     error.Position{Start: lex.current, End: lex.current, Line: lex.line},
+		Pos:     error.Position{Start: lex.start, End: lex.current, Line: lex.line},
 	}
 }
 func (lex *Lexer) atEnd() bool {

@@ -9,47 +9,38 @@ import (
 var handler *error.DiagnosticBag
 
 type Table struct {
-	symbols map[string]*Object
+	symbols *Scope
 }
 
-func InitTable() Table {
-	t := Table{symbols: make(map[string]*Object, 4)}
-	t.symbols["i8"] = newObj(TYPE)
-	t.symbols["i8"].Type = types.NewType("i8", types.TYPE_INT, 1, 1)
-	t.symbols["i16"] = newObj(TYPE)
-	t.symbols["i16"].Type = types.NewType("i16", types.TYPE_INT, 2, 2)
+var table *Table
 
-	t.symbols["i32"] = newObj(TYPE)
-	t.symbols["i32"].Type = types.NewType("i32", types.TYPE_INT, 4, 4)
-	t.symbols["i64"] = newObj(TYPE)
-	t.symbols["i64"].Type = types.NewType("i64", types.TYPE_INT, 8, 8)
-
-	t.symbols["bool"] = newObj(TYPE)
-	t.symbols["bool"].Type = types.NewType("bool", types.TYPE_BOOL, 1, 1)
-	t.symbols["void"] = newObj(TYPE)
-	t.symbols["void"].Type = types.NewType("void", types.TYPE_VOID, 0, 0)
-
-	return t
+func InitTable() *Table {
+	t := Table{symbols: NewScope(nil)}
+	t.symbols.Define("i8", newObj(TYPE, types.NewType("i8", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i16", newObj(TYPE, types.NewType("i16", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i32", newObj(TYPE, types.NewType("i32", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i64", newObj(TYPE, types.NewType("i64", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("bool", newObj(TYPE, types.NewType("bool", types.TYPE_BOOL, 1, 1)))
+	t.symbols.Define("void", newObj(TYPE, types.NewType("void", types.TYPE_VOID, 0, 0)))
+	return &t
 }
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
-	if _, ok := t.symbols[ast.Name]; ok {
+	if result := t.symbols.Lookup(ast.Name); result {
 		pos := ast.GetPos()
 		handler.ReportError(pos, "Can't redeclare funciton '%s' more than once", ast.Name)
 	}
-	t.symbols[ast.Name] = newObj(FN)
+	obj := newObj(FN, nil)
+	obj.Node = ast
+	t.symbols.Define(ast.Name, obj)
 }
 func (t *Table) GetObj(name string) *Object {
-	return t.symbols[name]
-}
-func (t *Table) declareVariable(ast *ast.StmtLet) {
-	if _, ok := t.symbols[ast.Name]; ok {
-		pos := ast.GetPos()
-		handler.ReportError(pos, "Can't redeclare variable '%s' more than once", ast.Name)
+	if t.symbols.Lookup(name) {
+		return t.symbols.GetObj(name)
 	}
-	t.symbols[ast.Name] = newObj(VAR)
+	return nil
 }
 func (t *Table) isVariableExist(ident *ast.ExprIdent) {
-	if _, ok := t.symbols[ident.Name]; !ok {
+	if !t.symbols.Lookup(ident.Name) {
 		pos := ident.GetPos()
 		handler.ReportError(pos, "Variable '%s' doesn't exist", ident.Name)
 	}
@@ -63,8 +54,8 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 	switch ty := typ.(type) {
 	case *types.TypeName:
 		{
-			val, ok := t.symbols[ty.Name]
-			if !ok {
+			val := t.symbols.GetObj(ty.Name)
+			if val == nil {
 				handler.ReportError(pos, "Type '%s' doesn't exist", ty.Name)
 				return nil, true
 			}
@@ -88,51 +79,61 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 func Resolve(ast []ast.Decl, bag *error.DiagnosticBag) *Table {
 	println("----RESOLVER----")
 	handler = bag
-	table := InitTable()
+	table = InitTable()
 	for _, decl := range ast {
-		resolver(decl, &table)
+		resolver(decl, table.symbols)
 	}
-	return &table
+	return table
 }
-func resolver(node ast.Node, table *Table) {
+func resolver(node ast.Node, scope *Scope) {
 	switch n := node.(type) {
 	case *ast.DeclFunction:
 		{
 			table.declareFunction(n)
 			if typ, ok := table.isTypeExist(n.RetType); ok {
-				table.GetObj(n.Name).Type = typ
-				table.GetObj(n.Name).Node = n
+				scope.GetObj(n.Name).Type = typ
+				scope.GetObj(n.Name).Node = n
 			}
+			localScope := NewScope(scope)
 			for _, stmt := range n.Body {
-				resolver(stmt, table)
+				resolver(stmt, localScope)
+
 			}
 		}
 	case *ast.StmtLet:
 		{
-			table.declareVariable(n)
-			if typ, ok := table.isTypeExist(n.Type); ok {
-				table.GetObj(n.Name).Type = typ
-				table.GetObj(n.Name).Node = n
+			if !scope.Lookup(n.Name) {
+				obj := newObj(VAR, nil)
+				if typ, ok := table.isTypeExist(n.Type); ok {
+					obj.Type = typ
+					scope.Define(n.Name, obj)
+				}
+			} else {
+				handler.ReportError(n.GetPos(), "Can't redeclare variable '%s' more than one", n.Name)
 			}
 			if n.Init != nil {
-				resolver(n.Init, table)
+				resolver(n.Init, scope)
 			}
 
 		}
+	case *ast.StmtReturn:
+		{
+			resolver(n.Result, scope)
+		}
 	case *ast.StmtExpr:
 		{
-			resolver(n.Expr, table)
+			resolver(n.Expr, scope)
 
 		}
 	case *ast.ExprBinary:
 		{
-			resolver(n.Left, table)
-			resolver(n.Right, table)
+			resolver(n.Left, scope)
+			resolver(n.Right, scope)
 		}
 	case *ast.ExprAssign:
 		{
-			resolver(n.Left, table)
-			resolver(n.Right, table)
+			resolver(n.Left, scope)
+			resolver(n.Right, scope)
 		}
 	case *ast.ExprInt:
 		{
@@ -143,7 +144,9 @@ func resolver(node ast.Node, table *Table) {
 		}
 	case *ast.ExprIdent:
 		{
-			table.isVariableExist(n)
+			if !scope.Lookup(n.Name) {
+				handler.ReportError(n.GetPos(), "Variable '%s' not found", n.Name)
+			}
 		}
 
 	}

@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/s0h1s2/ast"
-	"github.com/s0h1s2/checker"
+	// "github.com/s0h1s2/checker"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
 	"github.com/s0h1s2/parser"
@@ -330,15 +330,15 @@ func main() {
 		return
 	}
 
-	table := resolver.Resolve(tree, bag)
+	resolver.Resolve(tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		return
 	}
-	checker.TypeChecker(table, tree, bag)
-	if bag.GotErrors() {
-		bag.PrintErrors()
-		return
-	}
+	// checker.TypeChecker(table, tree, bag)
+	// if bag.GotErrors() {
+	// 	bag.PrintErrors()
+	// 	return
+	// }
 
 }

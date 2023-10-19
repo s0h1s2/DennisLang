@@ -19,8 +19,9 @@ type Object struct {
 	Type *types.Type
 }
 
-func newObj(kind ObjectKind) *Object {
+func newObj(kind ObjectKind, typee *types.Type) *Object {
 	return &Object{
 		Kind: kind,
+		Type: typee,
 	}
 }
