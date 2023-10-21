@@ -4,6 +4,7 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
+	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
@@ -68,7 +69,7 @@ func checkStmt(stmt ast.Stmt) {
 				return
 			}
 			result := checkExpr(node.Result, returnType)
-			areTypesEqual(pos, result, returnType)
+			areTypesEqual(pos, returnType, result)
 		}
 	case *ast.StmtExpr:
 		{
@@ -96,7 +97,23 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 			left := checkExpr(node.Left, nil)
 			right := checkExpr(node.Right, nil)
 			// TODO: check if they are number or ptr
-			areTypesEqual(node.GetPos(), left, right)
+			switch node.Op {
+			case token.TK_LESSEQUAL:
+				fallthrough
+			case token.TK_LESSTHAN:
+				fallthrough
+			case token.TK_GREATEREQUAL:
+				fallthrough
+			case token.TK_GREATERTHAN:
+				fallthrough
+			case token.TK_EQUAL:
+				{
+					if areTypesEqual(node.GetPos(), left, right) {
+						return symTable.GetObj("bool").Type
+					}
+				}
+			}
+			return left
 		}
 	default:
 		{
