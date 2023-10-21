@@ -1,8 +1,1 @@
-fn main():*void{
-  let b:i8=1;
-  let a:i8=1;
-  let c:i8=a+b;
-  let hel:bool=12;
-  let var:bool=true;
-  return 1;
-}
+

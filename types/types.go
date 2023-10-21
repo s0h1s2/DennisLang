@@ -12,6 +12,7 @@ const (
 )
 
 type Type struct {
+	TypeName  string
 	Kind      TypeKind
 	Size      uint64
 	Alignment uint64
@@ -19,9 +20,10 @@ type Type struct {
 	TypeId    int
 }
 
-func NewType(kind TypeKind, size uint64, align uint64) *Type {
+func NewType(name string, kind TypeKind, size uint64, align uint64) *Type {
 	typeId++
 	return &Type{
+		TypeName:  name,
 		Kind:      kind,
 		Size:      size,
 		Alignment: align,

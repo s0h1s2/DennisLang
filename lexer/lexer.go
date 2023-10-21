@@ -1,8 +1,6 @@
 package lexer
 
 import (
-	"fmt"
-
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
 )
@@ -76,7 +74,7 @@ func (lex *Lexer) makeToken(kind token.TokenKind, literal string) token.Token {
 	return token.Token{
 		Kind:    kind,
 		Literal: literal,
-		Pos:     error.Position{Start: lex.current, End: lex.current, Line: lex.line},
+		Pos:     error.Position{Start: lex.start, End: lex.current, Line: lex.line},
 	}
 }
 func (lex *Lexer) atEnd() bool {
@@ -139,6 +137,10 @@ start:
 		case '=':
 			{
 				lex.next()
+				if lex.ch == '=' {
+					lex.next()
+					return lex.makeToken(token.TK_EQUAL, "")
+				}
 				return lex.makeToken(token.TK_ASSIGN, "")
 			}
 		case '(':
@@ -184,7 +186,7 @@ start:
 				} else if lex.ch == '\n' {
 					goto start
 				}
-				lex.errors.ReportError(error.Error{Msg: fmt.Sprintf("Illegal token '%c' with ascii code of '%d'", lex.src[lex.current], lex.src[lex.current]), Pos: error.Position{Line: lex.line, Start: lex.start, End: lex.current}})
+				lex.errors.ReportError(error.Position{Line: lex.line, Start: lex.start, End: lex.current}, "Illegal token '%c' with ascii code of '%d'", lex.ch, lex.ch)
 				lex.next()
 				return lex.makeToken(token.TK_ILLEGAL, "")
 			}
