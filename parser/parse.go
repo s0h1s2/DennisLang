@@ -18,6 +18,7 @@ type Precedence byte
 const (
 	LOWEST Precedence = iota
 	ASSIGN
+	COMPARISON
 	TERM
 	FACTOR
 )
@@ -79,6 +80,16 @@ func getPreced(tk *token.Token) Precedence {
 		return FACTOR
 	case token.TK_ASSIGN:
 		return ASSIGN
+	case token.TK_EQUAL:
+		fallthrough
+	case token.TK_GREATERTHAN:
+		fallthrough
+	case token.TK_LESSTHAN:
+		fallthrough
+	case token.TK_GREATEREQUAL:
+		fallthrough
+	case token.TK_LESSEQUAL:
+		return COMPARISON
 	}
 	return LOWEST
 
@@ -156,6 +167,16 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	switch p.currentToken().Kind {
 	case token.TK_PLUS:
+		fallthrough
+	case token.TK_EQUAL:
+		fallthrough
+	case token.TK_LESSTHAN:
+		fallthrough
+	case token.TK_GREATERTHAN:
+		fallthrough
+	case token.TK_GREATEREQUAL:
+		fallthrough
+	case token.TK_LESSEQUAL:
 		fallthrough
 	case token.TK_STAR:
 		{

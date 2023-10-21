@@ -53,7 +53,7 @@ type ExprBinary struct {
 	Pos   error.Position
 	Left  Expr
 	Right Expr
-	Op    token.TokenKind //
+	Op    token.TokenKind
 }
 
 type ExprAssign struct {

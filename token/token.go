@@ -20,6 +20,10 @@ const (
 	TK_OPENBRACE
 	TK_CLOSEBRACE
 	TK_EQUAL
+	TK_LESSTHAN
+	TK_GREATERTHAN
+	TK_GREATEREQUAL
+	TK_LESSEQUAL
 	// KEYWORDS
 	keywords_begin
 	TK_LET
@@ -34,26 +38,30 @@ const (
 )
 
 var tokenKindString = [...]string{
-	TK_ILLEGAL:    "illegal",
-	TK_PLUS:       "+",
-	TK_STAR:       "*",
-	TK_ASSIGN:     "=",
-	TK_SEMICOLON:  ";",
-	TK_COLON:      ":",
-	TK_OPENPARAN:  "(",
-	TK_CLOSEPARAN: ")",
-	TK_OPENBRACE:  "{",
-	TK_CLOSEBRACE: "}",
-	TK_AND:        "&",
-	TK_EQUAL:      "==",
-	TK_INTEGER:    "integer",
-	TK_IDENT:      "identifier",
-	TK_RETURN:     "return",
-	TK_LET:        "let",
-	TK_FN:         "fn",
-	TK_TRUE:       "true",
-	TK_FALSE:      "false",
-	TK_EOF:        "EOF",
+	TK_ILLEGAL:      "illegal",
+	TK_PLUS:         "+",
+	TK_STAR:         "*",
+	TK_ASSIGN:       "=",
+	TK_SEMICOLON:    ";",
+	TK_COLON:        ":",
+	TK_OPENPARAN:    "(",
+	TK_CLOSEPARAN:   ")",
+	TK_OPENBRACE:    "{",
+	TK_CLOSEBRACE:   "}",
+	TK_AND:          "&",
+	TK_LESSTHAN:     "<",
+	TK_GREATERTHAN:  ">",
+	TK_GREATEREQUAL: ">=",
+	TK_LESSEQUAL:    "<=",
+	TK_EQUAL:        "==",
+	TK_INTEGER:      "integer",
+	TK_IDENT:        "identifier",
+	TK_RETURN:       "return",
+	TK_LET:          "let",
+	TK_FN:           "fn",
+	TK_TRUE:         "true",
+	TK_FALSE:        "false",
+	TK_EOF:          "EOF",
 }
 
 func (tk TokenKind) String() string {

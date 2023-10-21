@@ -134,6 +134,24 @@ start:
 				lex.next()
 				return lex.makeToken(token.TK_AND, "")
 			}
+		case '<':
+			{
+				lex.next()
+				if lex.ch == '=' {
+					lex.next()
+					return lex.makeToken(token.TK_LESSEQUAL, "")
+				}
+				return lex.makeToken(token.TK_LESSTHAN, "")
+			}
+		case '>':
+			{
+				lex.next()
+				if lex.ch == '=' {
+					lex.next()
+					return lex.makeToken(token.TK_GREATEREQUAL, "")
+				}
+				return lex.makeToken(token.TK_GREATERTHAN, "")
+			}
 		case '=':
 			{
 				lex.next()
