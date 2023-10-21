@@ -16,20 +16,23 @@ var table *Table
 
 func InitTable() *Table {
 	t := Table{symbols: NewScope(nil)}
-	t.symbols.Define("i8", newObj(TYPE, types.NewType("i8", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i16", newObj(TYPE, types.NewType("i16", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i32", newObj(TYPE, types.NewType("i32", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i64", newObj(TYPE, types.NewType("i64", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("bool", newObj(TYPE, types.NewType("bool", types.TYPE_BOOL, 1, 1)))
-	t.symbols.Define("void", newObj(TYPE, types.NewType("void", types.TYPE_VOID, 0, 0)))
+	t.symbols.Define("i8", newTypeObj(types.NewType("i8", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i16", newTypeObj(types.NewType("i16", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i32", newTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i64", newTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("bool", newTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
+	t.symbols.Define("void", newTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
 	return &t
 }
+func (t *Table) GetScope() *Scope {
+	return t.symbols
+}
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
-	if result := t.symbols.Lookup(ast.Name); result {
+	if t.symbols.Lookup(ast.Name) {
 		pos := ast.GetPos()
 		handler.ReportError(pos, "Can't redeclare funciton '%s' more than once", ast.Name)
 	}
-	obj := newObj(FN, nil)
+	obj := newObj(FN, nil, nil)
 	obj.Node = ast
 	t.symbols.Define(ast.Name, obj)
 }
@@ -81,7 +84,7 @@ func Resolve(ast []ast.Decl, bag *error.DiagnosticBag) *Table {
 	handler = bag
 	table = InitTable()
 	for _, decl := range ast {
-		resolver(decl, table.symbols)
+		resolver(decl, table.GetScope())
 	}
 	return table
 }
@@ -97,19 +100,19 @@ func resolver(node ast.Node, scope *Scope) {
 			localScope := NewScope(scope)
 			for _, stmt := range n.Body {
 				resolver(stmt, localScope)
-
 			}
+			table.GetObj(n.Name).scope = localScope
 		}
 	case *ast.StmtLet:
 		{
 			if !scope.Lookup(n.Name) {
-				obj := newObj(VAR, nil)
+				obj := newObj(VAR, nil, scope)
 				if typ, ok := table.isTypeExist(n.Type); ok {
 					obj.Type = typ
 					scope.Define(n.Name, obj)
 				}
 			} else {
-				handler.ReportError(n.GetPos(), "Can't redeclare variable '%s' more than one", n.Name)
+				handler.ReportError(n.GetPos(), "Can't redeclare variable '%s' more than once", n.Name)
 			}
 			if n.Init != nil {
 				resolver(n.Init, scope)

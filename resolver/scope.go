@@ -21,6 +21,13 @@ func (s *Scope) Lookup(name string) bool {
 	}
 	return false
 }
+func (s *Scope) LookupOnce(name string) bool {
+	if _, ok := s.symbols[name]; ok {
+		return true
+	}
+	return false
+}
+
 func (s *Scope) Define(name string, obj *Object) bool {
 	if ok := s.Lookup(name); !ok {
 		s.symbols[name] = obj
@@ -28,6 +35,7 @@ func (s *Scope) Define(name string, obj *Object) bool {
 	}
 	return false
 }
+
 func (s *Scope) GetObj(name string) *Object {
 	if s.Lookup(name) {
 		return s.symbols[name]

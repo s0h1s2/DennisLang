@@ -134,24 +134,13 @@ func (p *Parser) parseAddrOf() ast.Expr {
 		Right: right,
 	}
 }
-func (p *Parser) getBinaryOp() ast.BinaryOpKind {
-	tk := p.currentToken().Kind
-	switch tk {
-	case token.TK_PLUS:
-		return ast.BIOP_ADD
-	case token.TK_STAR:
-		return ast.BIOP_MUL
-	}
-	panic("Unreachable binary operation.")
-}
 
 func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
 	preced := p.currPreced()
-	op := p.getBinaryOp()
 	currentToken := p.currentToken()
 	p.consumeToken()
 	right := p.parseExpression(preced)
-	return &ast.ExprBinary{Left: left, Right: right, Op: op, Pos: currentToken.Pos}
+	return &ast.ExprBinary{Left: left, Right: right, Op: currentToken.Kind, Pos: currentToken.Pos}
 }
 func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 	old := p.inRHS

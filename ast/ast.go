@@ -1,7 +1,10 @@
 package ast
 
-import "github.com/s0h1s2/types"
-import "github.com/s0h1s2/error"
+import (
+	"github.com/s0h1s2/error"
+	"github.com/s0h1s2/token"
+	"github.com/s0h1s2/types"
+)
 
 type Node interface {
 	GetPos() error.Position
@@ -46,18 +49,11 @@ type StmtExpr struct {
 
 type BinaryOpKind byte
 
-const (
-	BIOP_ADD BinaryOpKind = iota
-	BIOP_SUB
-	BIOP_MUL
-	BIOP_DIV
-)
-
 type ExprBinary struct {
 	Pos   error.Position
 	Left  Expr
 	Right Expr
-	Op    BinaryOpKind
+	Op    token.TokenKind //
 }
 
 type ExprAssign struct {

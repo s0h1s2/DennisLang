@@ -1,15 +1,1 @@
-fn typechecking():i64{
-  let a:i8=1;
-  let b:i16=1;
-  let c:i32=1;
-  let d:i64=1;
-  let f:i8=1;
-  let e:i8=1;
-  return e;
-}
-fn main():i16{
-  let a:i8=12;
-  let e:i8=1;
-  return 1;
-}
 
