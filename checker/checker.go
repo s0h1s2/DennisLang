@@ -68,7 +68,7 @@ func checkStmt(stmt ast.Stmt) {
 				return
 			}
 			result := checkExpr(node.Result, returnType)
-			areTypesEqual(pos, result, returnType)
+			areTypesEqual(pos, returnType, result)
 		}
 	case *ast.StmtExpr:
 		{
@@ -97,10 +97,6 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 			right := checkExpr(node.Right, nil)
 			// TODO: check if they are number or ptr
 			areTypesEqual(node.GetPos(), left, right)
-		}
-	default:
-		{
-			panic("Unreachable")
 		}
 	}
 	if typeResult != nil {
