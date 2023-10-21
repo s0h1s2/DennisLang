@@ -213,6 +213,7 @@ func (p *Parser) parseReturn() ast.Stmt {
 	p.expectToken(token.TK_SEMICOLON)
 	return &ast.StmtReturn{Result: result, Pos: prevToken.Pos}
 }
+
 func (p *Parser) parseVariableStmt() ast.Stmt {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_COLON)
@@ -226,7 +227,18 @@ func (p *Parser) parseVariableStmt() ast.Stmt {
 	p.expectToken(token.TK_SEMICOLON)
 	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init, Pos: name.Pos}
 }
-func (p *Parser) parseBlock() []ast.Stmt {
+func (p *Parser) parseIf() ast.Stmt {
+	pos := p.currentToken().Pos
+	cond := p.parseExpression(LOWEST)
+	p.consumeToken()
+	then := p.parseBlock()
+	return &ast.StmtIf{
+		Cond: cond,
+		Then: then,
+		Pos:  pos,
+	}
+}
+func (p *Parser) parseBlock() *ast.StmtBlock {
 	p.expectToken(token.TK_OPENBRACE)
 	stmts := []ast.Stmt{}
 	for !p.atEnd() && p.currentToken().Kind != token.TK_CLOSEBRACE {
@@ -241,6 +253,11 @@ func (p *Parser) parseBlock() []ast.Stmt {
 				p.consumeToken()
 				stmts = append(stmts, p.parseReturn())
 			}
+		case token.TK_IF:
+			{
+				p.consumeToken()
+				stmts = append(stmts, p.parseIf())
+			}
 		default:
 			{
 				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression(LOWEST)})
@@ -250,7 +267,7 @@ func (p *Parser) parseBlock() []ast.Stmt {
 		}
 	}
 	p.expectToken(token.TK_CLOSEBRACE)
-	return stmts
+	return &ast.StmtBlock{Block: stmts}
 }
 func (p *Parser) parseBaseType() types.TypeSpec {
 	name := p.expectToken(token.TK_IDENT)

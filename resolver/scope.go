@@ -8,13 +8,13 @@ type Scope struct {
 func NewScope(parent *Scope) *Scope {
 	return &Scope{
 		parent:  parent,
-		symbols: make(map[string]*Object, 4),
+		symbols: make(map[string]*Object),
 	}
 }
 func (s *Scope) Lookup(name string) bool {
 	scope := s
 	for scope != nil {
-		if _, ok := s.symbols[name]; ok {
+		if _, ok := scope.symbols[name]; ok {
 			return true
 		}
 		scope = scope.parent

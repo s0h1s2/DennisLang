@@ -98,11 +98,12 @@ func resolver(node ast.Node, scope *Scope) {
 				scope.GetObj(n.Name).Node = n
 			}
 			localScope := NewScope(scope)
-			for _, stmt := range n.Body {
+			for _, stmt := range n.Body.Block {
 				resolver(stmt, localScope)
 			}
 			table.GetObj(n.Name).scope = localScope
 		}
+
 	case *ast.StmtLet:
 		{
 			if !scope.Lookup(n.Name) {
@@ -116,6 +117,19 @@ func resolver(node ast.Node, scope *Scope) {
 			}
 			if n.Init != nil {
 				resolver(n.Init, scope)
+			}
+
+		}
+	case *ast.StmtIf:
+		{
+			resolver(n.Cond, scope)
+			resolver(n.Then, scope)
+		}
+	case *ast.StmtBlock:
+		{
+			newScope := NewScope(scope)
+			for _, stmt := range n.Block {
+				resolver(stmt, newScope)
 			}
 
 		}
@@ -140,7 +154,6 @@ func resolver(node ast.Node, scope *Scope) {
 		}
 	case *ast.ExprInt:
 		{
-
 		}
 	case *ast.ExprBoolean:
 		{
@@ -151,6 +164,9 @@ func resolver(node ast.Node, scope *Scope) {
 				handler.ReportError(n.GetPos(), "Variable '%s' not found", n.Name)
 			}
 		}
-
+	default:
+		{
+			panic("Unreachable")
+		}
 	}
 }

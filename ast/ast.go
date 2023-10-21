@@ -23,20 +23,29 @@ type DeclFunction struct {
 	Pos     error.Position
 	Name    string
 	RetType types.TypeSpec
-	Body    []Stmt
+	Body    *StmtBlock
 	End     error.Position
 }
 type Stmt interface {
 	Node
 	stmtNode()
 }
-
+type StmtBlock struct {
+	Pos   error.Position
+	Block []Stmt
+}
 type StmtLet struct {
 	Pos  error.Position
 	Name string
 	Type types.TypeSpec
 	Init Expr
 }
+type StmtIf struct {
+	Pos  error.Position
+	Cond Expr
+	Then *StmtBlock
+}
+
 type StmtReturn struct {
 	Pos    error.Position
 	Result Expr
@@ -46,8 +55,6 @@ type StmtExpr struct {
 	Pos  error.Position
 	Expr Expr
 }
-
-type BinaryOpKind byte
 
 type ExprBinary struct {
 	Pos   error.Position
@@ -88,6 +95,15 @@ func (s *StmtLet) stmtNode() {}
 func (s *StmtLet) GetPos() error.Position {
 	return s.Pos
 }
+func (s *StmtIf) stmtNode() {}
+func (s *StmtIf) GetPos() error.Position {
+	return s.Pos
+}
+func (s *StmtBlock) stmtNode() {}
+func (s *StmtBlock) GetPos() error.Position {
+	return s.Pos
+}
+
 func (s *StmtReturn) stmtNode() {}
 func (s *StmtReturn) GetPos() error.Position {
 	return s.Pos
