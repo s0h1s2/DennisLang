@@ -4,18 +4,19 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
+	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
 var symTable *resolver.Table
-var currScope *resolver.Scope
-var prevScope *resolver.Scope
+var currScope *scope.Scope
+var prevScope *scope.Scope
 var declerations []ast.Decl
 var handler *error.DiagnosticBag
 var functionName string
 
-func enterScope(scope *resolver.Scope) {
+func enterScope(scope *scope.Scope) {
 	prevScope = currScope
 	currScope = scope
 }
@@ -44,7 +45,7 @@ func checkDecl(decl ast.Decl) {
 		{
 			enterScope(symTable.GetObj(node.Name).GetScope())
 			functionName = node.Name
-			for _, stmt := range node.Body {
+			for _, stmt := range node.Body.Block {
 				checkStmt(stmt)
 			}
 			leaveScope()
@@ -61,6 +62,22 @@ func checkStmt(stmt ast.Stmt) {
 			result := checkExpr(node.Init, variableType)
 			areTypesEqual(pos, variableType, result)
 		}
+	case *ast.StmtIf:
+		{
+			cond := checkExpr(node.Cond, nil)
+			if cond.Kind != types.TYPE_BOOL {
+				handler.ReportError(pos, "if expression must be boolean")
+			}
+			checkStmt(node.Then)
+		}
+	case *ast.StmtBlock:
+		{
+			enterScope(node.Scope)
+			for _, stmt := range node.Block {
+				checkStmt(stmt)
+			}
+			leaveScope()
+		}
 	case *ast.StmtReturn:
 		{
 			returnType := symTable.GetObj(functionName).Type
@@ -73,6 +90,7 @@ func checkStmt(stmt ast.Stmt) {
 		}
 	case *ast.StmtExpr:
 		{
+			checkExpr(node.Expr, nil)
 		}
 
 	}
@@ -91,6 +109,12 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 	case *ast.ExprIdent:
 		{
 			return currScope.GetObj(node.Name).Type
+		}
+	case *ast.ExprAssign:
+		{
+			left := checkExpr(node.Left, expectedType)
+			right := checkExpr(node.Right, expectedType)
+			areTypesEqual(node.GetPos(), left, right)
 		}
 	case *ast.ExprBinary:
 		{

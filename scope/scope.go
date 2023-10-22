@@ -1,4 +1,4 @@
-package resolver
+package scope
 
 type Scope struct {
 	parent  *Scope
@@ -8,13 +8,13 @@ type Scope struct {
 func NewScope(parent *Scope) *Scope {
 	return &Scope{
 		parent:  parent,
-		symbols: make(map[string]*Object, 4),
+		symbols: make(map[string]*Object),
 	}
 }
 func (s *Scope) Lookup(name string) bool {
 	scope := s
 	for scope != nil {
-		if _, ok := s.symbols[name]; ok {
+		if _, ok := scope.symbols[name]; ok {
 			return true
 		}
 		scope = scope.parent
@@ -37,8 +37,12 @@ func (s *Scope) Define(name string, obj *Object) bool {
 }
 
 func (s *Scope) GetObj(name string) *Object {
-	if s.Lookup(name) {
-		return s.symbols[name]
+	scope := s
+	for scope != nil {
+		if scope.LookupOnce(name) {
+			return scope.symbols[name]
+		}
+		scope = scope.parent
 	}
 	return nil
 }

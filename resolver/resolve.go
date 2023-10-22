@@ -3,28 +3,29 @@ package resolver
 import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
+	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/types"
 )
 
 var handler *error.DiagnosticBag
 
 type Table struct {
-	symbols *Scope
+	symbols *scope.Scope
 }
 
 var table *Table
 
 func InitTable() *Table {
-	t := Table{symbols: NewScope(nil)}
-	t.symbols.Define("i8", newTypeObj(types.NewType("i8", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i16", newTypeObj(types.NewType("i16", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i32", newTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i64", newTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("bool", newTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
-	t.symbols.Define("void", newTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
+	t := Table{symbols: scope.NewScope(nil)}
+	t.symbols.Define("i8", scope.NewTypeObj(types.NewType("i8", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i16", scope.NewTypeObj(types.NewType("i16", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i32", scope.NewTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
+	t.symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
+	t.symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
 	return &t
 }
-func (t *Table) GetScope() *Scope {
+func (t *Table) GetScope() *scope.Scope {
 	return t.symbols
 }
 func (t *Table) declareFunction(ast *ast.DeclFunction) {
@@ -32,11 +33,11 @@ func (t *Table) declareFunction(ast *ast.DeclFunction) {
 		pos := ast.GetPos()
 		handler.ReportError(pos, "Can't redeclare funciton '%s' more than once", ast.Name)
 	}
-	obj := newObj(FN, nil, nil)
-	obj.Node = ast
+	obj := scope.NewObj(scope.FN, nil, nil)
+	// obj.Node = ast
 	t.symbols.Define(ast.Name, obj)
 }
-func (t *Table) GetObj(name string) *Object {
+func (t *Table) GetObj(name string) *scope.Object {
 	if t.symbols.Lookup(name) {
 		return t.symbols.GetObj(name)
 	}
@@ -62,7 +63,7 @@ func (t *Table) isTypeExist(typ types.TypeSpec) (*types.Type, bool) {
 				handler.ReportError(pos, "Type '%s' doesn't exist", ty.Name)
 				return nil, true
 			}
-			if val.Kind != TYPE {
+			if val.Kind != scope.TYPE {
 				handler.ReportError(pos, "'%s' must be a type", ty.Name)
 			}
 			return val.Type, true
@@ -88,69 +89,85 @@ func Resolve(ast []ast.Decl, bag *error.DiagnosticBag) *Table {
 	}
 	return table
 }
-func resolver(node ast.Node, scope *Scope) {
+func resolver(node ast.Node, currScope *scope.Scope) {
 	switch n := node.(type) {
 	case *ast.DeclFunction:
 		{
 			table.declareFunction(n)
 			if typ, ok := table.isTypeExist(n.RetType); ok {
-				scope.GetObj(n.Name).Type = typ
-				scope.GetObj(n.Name).Node = n
+				currScope.GetObj(n.Name).Type = typ
+				// currScope.GetObj(n.Name).Node = n
 			}
-			localScope := NewScope(scope)
-			for _, stmt := range n.Body {
+			localScope := scope.NewScope(currScope)
+			for _, stmt := range n.Body.Block {
 				resolver(stmt, localScope)
 			}
-			table.GetObj(n.Name).scope = localScope
+			table.GetObj(n.Name).Scope = localScope
 		}
+
 	case *ast.StmtLet:
 		{
-			if !scope.Lookup(n.Name) {
-				obj := newObj(VAR, nil, scope)
+			if !currScope.Lookup(n.Name) {
+				obj := scope.NewObj(scope.VAR, nil, currScope)
 				if typ, ok := table.isTypeExist(n.Type); ok {
 					obj.Type = typ
-					scope.Define(n.Name, obj)
+					currScope.Define(n.Name, obj)
 				}
 			} else {
 				handler.ReportError(n.GetPos(), "Can't redeclare variable '%s' more than once", n.Name)
 			}
 			if n.Init != nil {
-				resolver(n.Init, scope)
+				resolver(n.Init, currScope)
 			}
 
 		}
+	case *ast.StmtIf:
+		{
+			resolver(n.Cond, currScope)
+			resolver(n.Then, currScope)
+		}
+	case *ast.StmtBlock:
+		{
+			newScope := scope.NewScope(currScope)
+			for _, stmt := range n.Block {
+				resolver(stmt, newScope)
+			}
+			n.Scope = newScope
+		}
 	case *ast.StmtReturn:
 		{
-			resolver(n.Result, scope)
+			resolver(n.Result, currScope)
 		}
 	case *ast.StmtExpr:
 		{
-			resolver(n.Expr, scope)
+			resolver(n.Expr, currScope)
 
 		}
 	case *ast.ExprBinary:
 		{
-			resolver(n.Left, scope)
-			resolver(n.Right, scope)
+			resolver(n.Left, currScope)
+			resolver(n.Right, currScope)
 		}
 	case *ast.ExprAssign:
 		{
-			resolver(n.Left, scope)
-			resolver(n.Right, scope)
+			resolver(n.Left, currScope)
+			resolver(n.Right, currScope)
 		}
 	case *ast.ExprInt:
 		{
-
 		}
 	case *ast.ExprBoolean:
 		{
 		}
 	case *ast.ExprIdent:
 		{
-			if !scope.Lookup(n.Name) {
+			if !currScope.Lookup(n.Name) {
 				handler.ReportError(n.GetPos(), "Variable '%s' not found", n.Name)
 			}
 		}
-
+	default:
+		{
+			panic("Unreachable")
+		}
 	}
 }
