@@ -27,6 +27,15 @@ type DeclFunction struct {
 	Body    *StmtBlock
 	End     error.Position
 }
+type Field struct {
+	Name string
+	Type types.TypeSpec
+}
+type DeclStruct struct {
+	Pos    error.Position
+	Name   string
+	Fields []*Field
+}
 type Stmt interface {
 	Node
 	stmtNode()
@@ -91,6 +100,10 @@ type ExprBoolean struct {
 
 func (e *DeclFunction) declNode() {}
 func (e *DeclFunction) GetPos() error.Position {
+	return e.Pos
+}
+func (e *DeclStruct) declNode() {}
+func (e *DeclStruct) GetPos() error.Position {
 	return e.Pos
 }
 func (s *StmtLet) stmtNode() {}

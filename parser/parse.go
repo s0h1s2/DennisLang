@@ -310,6 +310,11 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 				p.consumeToken()
 				decls = append(decls, p.parseFunction())
 			}
+		case token.TK_STRUCT:
+			{
+				p.consumeToken()
+				decls = append(decls, p.parseStruct())
+			}
 		default:
 			{
 				p.reportHere("Unable to parse '%s' declaration", p.currentToken().String())
@@ -318,6 +323,27 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 		}
 	}
 	return decls
+}
+func (p *Parser) parseField() *ast.Field {
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_COLON)
+	typ := p.parseType()
+	return &ast.Field{Name: name.Literal, Type: typ}
+}
+func (p *Parser) parseStruct() ast.Decl {
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_OPENBRACE)
+	fields := make([]*ast.Field, 4)
+	for !p.atEnd() && !p.matchToken(token.TK_CLOSEBRACE) {
+		fields = append(fields, p.parseField())
+		p.expectToken(token.TK_SEMICOLON)
+	}
+	p.expectToken(token.TK_CLOSEBRACE)
+	return &ast.DeclStruct{
+		Name:   name.Literal,
+		Fields: fields,
+		Pos:    name.Pos,
+	}
 }
 func (p *Parser) parseFunction() *ast.DeclFunction {
 	name := p.expectToken(token.TK_IDENT)
