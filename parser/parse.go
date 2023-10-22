@@ -253,6 +253,10 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 				p.consumeToken()
 				stmts = append(stmts, p.parseReturn())
 			}
+		case token.TK_OPENBRACE:
+			{
+				stmts = append(stmts, p.parseBlock())
+			}
 		case token.TK_IF:
 			{
 				p.consumeToken()

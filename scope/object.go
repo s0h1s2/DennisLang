@@ -1,7 +1,7 @@
-package resolver
+package scope
 
 import (
-	"github.com/s0h1s2/ast"
+	// "github.com/s0h1s2/ast"
 	"github.com/s0h1s2/types"
 )
 
@@ -14,25 +14,25 @@ const (
 )
 
 type Object struct {
-	Kind  ObjectKind
-	Node  ast.Node
+	Kind ObjectKind
+	// Node  ast.Node
 	Type  *types.Type
-	scope *Scope
+	Scope *Scope
 }
 
-func newObj(kind ObjectKind, typee *types.Type, scope *Scope) *Object {
+func NewObj(kind ObjectKind, typee *types.Type, scope *Scope) *Object {
 	return &Object{
 		Kind:  kind,
 		Type:  typee,
-		scope: scope,
+		Scope: scope,
 	}
 }
-func newTypeObj(typee *types.Type) *Object {
+func NewTypeObj(typee *types.Type) *Object {
 	return &Object{
 		Kind: TYPE,
 		Type: typee,
 	}
 }
 func (o *Object) GetScope() *Scope {
-	return o.scope
+	return o.Scope
 }

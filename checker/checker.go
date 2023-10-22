@@ -4,18 +4,19 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
+	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
 var symTable *resolver.Table
-var currScope *resolver.Scope
-var prevScope *resolver.Scope
+var currScope *scope.Scope
+var prevScope *scope.Scope
 var declerations []ast.Decl
 var handler *error.DiagnosticBag
 var functionName string
 
-func enterScope(scope *resolver.Scope) {
+func enterScope(scope *scope.Scope) {
 	prevScope = currScope
 	currScope = scope
 }
@@ -71,9 +72,11 @@ func checkStmt(stmt ast.Stmt) {
 		}
 	case *ast.StmtBlock:
 		{
+			enterScope(node.Scope)
 			for _, stmt := range node.Block {
 				checkStmt(stmt)
 			}
+			leaveScope()
 		}
 	case *ast.StmtReturn:
 		{

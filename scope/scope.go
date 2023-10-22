@@ -1,4 +1,4 @@
-package resolver
+package scope
 
 type Scope struct {
 	parent  *Scope
@@ -37,8 +37,12 @@ func (s *Scope) Define(name string, obj *Object) bool {
 }
 
 func (s *Scope) GetObj(name string) *Object {
-	if s.Lookup(name) {
-		return s.symbols[name]
+	scope := s
+	for scope != nil {
+		if scope.LookupOnce(name) {
+			return scope.symbols[name]
+		}
+		scope = scope.parent
 	}
 	return nil
 }

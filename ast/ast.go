@@ -2,6 +2,7 @@ package ast
 
 import (
 	"github.com/s0h1s2/error"
+	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
@@ -33,6 +34,7 @@ type Stmt interface {
 type StmtBlock struct {
 	Pos   error.Position
 	Block []Stmt
+	Scope *scope.Scope
 }
 type StmtLet struct {
 	Pos  error.Position
