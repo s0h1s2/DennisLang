@@ -12,6 +12,7 @@ type Parser struct {
 	bag        *error.DiagnosticBag
 	tokenIndex int
 	inRHS      bool
+	hadError   bool
 }
 type Precedence byte
 
@@ -42,6 +43,7 @@ func (p *Parser) expectToken(kind token.TokenKind) *token.Token {
 		return token
 	}
 	p.reportHere("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String())
+	p.hadError = true
 	return nil
 }
 func (p *Parser) matchToken(kind token.TokenKind) bool {
@@ -61,6 +63,7 @@ func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 		bag:        bag,
 		tokenIndex: 0,
 		inRHS:      false,
+		hadError:   false,
 	}
 }
 func (p *Parser) reportHere(format string, args ...interface{}) {
@@ -324,6 +327,13 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 	}
 	return decls
 }
+func (p *Parser) hasError() bool {
+	if p.hadError {
+		p.hadError = false
+		return true
+	}
+	return false
+}
 func (p *Parser) parseField() *ast.Field {
 	name := p.expectToken(token.TK_IDENT)
 	if name == nil {
@@ -335,13 +345,7 @@ func (p *Parser) parseField() *ast.Field {
 }
 func (p *Parser) parseStruct() ast.Decl {
 	name := p.expectToken(token.TK_IDENT)
-	if name == nil {
-		return nil
-	}
-
-	if p.expectToken(token.TK_OPENBRACE) == nil {
-		return nil
-	}
+	p.expectToken(token.TK_OPENBRACE)
 	fields := make([]*ast.Field, 4)
 	for !p.atEnd() && !p.matchToken(token.TK_CLOSEBRACE) {
 		fields = append(fields, p.parseField())
@@ -349,7 +353,9 @@ func (p *Parser) parseStruct() ast.Decl {
 			return nil
 		}
 	}
-	if p.expectToken(token.TK_CLOSEBRACE) == nil {
+	p.expectToken(token.TK_CLOSEBRACE)
+
+	if p.hasError() {
 		return nil
 	}
 	return &ast.DeclStruct{
@@ -365,6 +371,9 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	p.expectToken(token.TK_COLON)
 	typeResult := p.parseType()
 	body := p.parseBlock()
+	if p.hasError() {
+		return nil
+	}
 	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}
 }
 func (p *Parser) Parse() []ast.Decl {
