@@ -25,6 +25,12 @@ func InitTable() *Table {
 	t.symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
 	return &t
 }
+func declareStruct(decl *ast.DeclStruct) {
+	if table.symbols.Lookup(decl.Name) {
+		handler.ReportError(decl.GetPos(), "'%s' can't declare more than once", decl.Name)
+	}
+	table.symbols.Define(decl.Name, nil)
+}
 func (t *Table) GetScope() *scope.Scope {
 	return t.symbols
 }
@@ -104,7 +110,10 @@ func resolver(node ast.Node, currScope *scope.Scope) {
 			}
 			table.GetObj(n.Name).Scope = localScope
 		}
+	case *ast.DeclStruct:
+		{
 
+		}
 	case *ast.StmtLet:
 		{
 			if !currScope.Lookup(n.Name) {

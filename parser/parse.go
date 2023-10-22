@@ -326,19 +326,32 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 }
 func (p *Parser) parseField() *ast.Field {
 	name := p.expectToken(token.TK_IDENT)
+	if name == nil {
+		return nil
+	}
 	p.expectToken(token.TK_COLON)
 	typ := p.parseType()
 	return &ast.Field{Name: name.Literal, Type: typ}
 }
 func (p *Parser) parseStruct() ast.Decl {
 	name := p.expectToken(token.TK_IDENT)
-	p.expectToken(token.TK_OPENBRACE)
+	if name == nil {
+		return nil
+	}
+
+	if p.expectToken(token.TK_OPENBRACE) == nil {
+		return nil
+	}
 	fields := make([]*ast.Field, 4)
 	for !p.atEnd() && !p.matchToken(token.TK_CLOSEBRACE) {
 		fields = append(fields, p.parseField())
-		p.expectToken(token.TK_SEMICOLON)
+		if p.expectToken(token.TK_SEMICOLON) == nil {
+			return nil
+		}
 	}
-	p.expectToken(token.TK_CLOSEBRACE)
+	if p.expectToken(token.TK_CLOSEBRACE) == nil {
+		return nil
+	}
 	return &ast.DeclStruct{
 		Name:   name.Literal,
 		Fields: fields,
