@@ -107,6 +107,11 @@ func (lex *Lexer) scanIdentOrKeyword() string {
 	}
 	return result
 }
+func (lex *Lexer) scanSingleLineComment() {
+	for !lex.atEnd() && lex.ch != '\n' {
+		lex.next()
+	}
+}
 func (lex *Lexer) getToken() token.Token {
 start:
 	lex.start = lex.current
@@ -192,7 +197,13 @@ start:
 				lex.next()
 				return lex.makeToken(token.TK_SEMICOLON, "")
 			}
-
+		case '/':
+			{
+				lex.next()
+				if lex.ch == '/' {
+					lex.scanSingleLineComment()
+				}
+			}
 		default:
 			{
 				if lex.ch >= '0' && lex.ch <= '9' {
