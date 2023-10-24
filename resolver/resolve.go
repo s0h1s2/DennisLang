@@ -160,7 +160,9 @@ func resolver(node ast.Node, currScope *scope.Scope) bool {
 		}
 	case *ast.StmtReturn:
 		{
-			resolver(n.Result, currScope)
+			if n.Result != nil {
+				resolver(n.Result, currScope)
+			}
 		}
 	case *ast.StmtExpr:
 		{

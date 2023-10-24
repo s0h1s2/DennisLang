@@ -172,7 +172,6 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 func (p *Parser) parseGetField(left ast.Expr) ast.Expr {
 	p.consumeToken() // consume '.'
 	prec := p.currPreced()
-	println(prec)
 	val, ok := left.(*ast.ExprIdent)
 	if !ok {
 		p.reportHere("%s", "Left hand side must be an identifier.")

@@ -59,8 +59,10 @@ func checkStmt(stmt ast.Stmt) {
 	case *ast.StmtLet:
 		{
 			variableType := currScope.GetObj(node.Name).Type
-			result := checkExpr(node.Init, variableType)
-			areTypesEqual(pos, variableType, result)
+			if node.Init != nil {
+				result := checkExpr(node.Init, variableType)
+				areTypesEqual(pos, variableType, result)
+			}
 		}
 	case *ast.StmtIf:
 		{
@@ -118,6 +120,12 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 		}
 	case *ast.ExprGet:
 		{
+			obj := currScope.GetObj(node.Name)
+			var typResult *types.Type
+			enterScope(symTable.GetObj(obj.Type.TypeName).GetScope())
+			typResult = checkExpr(node.Right, nil)
+			leaveScope()
+			return typResult
 		}
 	case *ast.ExprBinary:
 		{
