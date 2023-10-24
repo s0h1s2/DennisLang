@@ -27,9 +27,11 @@ func InitTable() *Table {
 }
 func declareStruct(decl *ast.DeclStruct) {
 	if table.symbols.Lookup(decl.Name) {
-		handler.ReportError(decl.GetPos(), "'%s' can't declare more than once", decl.Name)
+		handler.ReportError(decl.GetPos(), "Can't redeclare struct '%s' more than once", decl.Name)
 	}
-	table.symbols.Define(decl.Name, nil)
+	structScope := scope.NewScope(nil)
+	typ := types.NewType(decl.Name, types.TYPE_TYPE, 0, 0)
+	table.symbols.Define(decl.Name, scope.NewObj(scope.TYPE, typ, structScope))
 }
 func (t *Table) GetScope() *scope.Scope {
 	return t.symbols
@@ -95,7 +97,7 @@ func Resolve(ast []ast.Decl, bag *error.DiagnosticBag) *Table {
 	}
 	return table
 }
-func resolver(node ast.Node, currScope *scope.Scope) {
+func resolver(node ast.Node, currScope *scope.Scope) bool {
 	switch n := node.(type) {
 	case *ast.DeclFunction:
 		{
@@ -109,10 +111,23 @@ func resolver(node ast.Node, currScope *scope.Scope) {
 				resolver(stmt, localScope)
 			}
 			table.GetObj(n.Name).Scope = localScope
+			return true
 		}
 	case *ast.DeclStruct:
 		{
-
+			declareStruct(n)
+			structScope := table.symbols.GetObj(n.Name).GetScope()
+			for _, field := range n.Fields {
+				ok := structScope.Define(field.Name, scope.NewObj(scope.VAR, nil, nil))
+				if !ok {
+					handler.ReportError(field.Pos, "Can't redeclare '%s' field in '%s'", field.Name, n.Name)
+				} else {
+					if typ, ok := table.isTypeExist(field.Type); ok {
+						structScope.GetObj(field.Name).Type = typ
+					}
+				}
+			}
+			return true
 		}
 	case *ast.StmtLet:
 		{
@@ -157,6 +172,14 @@ func resolver(node ast.Node, currScope *scope.Scope) {
 			resolver(n.Left, currScope)
 			resolver(n.Right, currScope)
 		}
+	case *ast.ExprGet:
+		{
+			if currScope.Lookup(n.Name) {
+				typ := table.symbols.GetObj(currScope.GetObj(n.Name).Type.TypeName)
+				resolver(n.Right, typ.GetScope())
+			}
+		}
+
 	case *ast.ExprAssign:
 		{
 			resolver(n.Left, currScope)
@@ -170,13 +193,18 @@ func resolver(node ast.Node, currScope *scope.Scope) {
 		}
 	case *ast.ExprIdent:
 		{
+
 			if !currScope.Lookup(n.Name) {
 				handler.ReportError(n.GetPos(), "Variable '%s' not found", n.Name)
+				// return false;
 			}
+			return true
 		}
 	default:
 		{
+			println(n)
 			panic("Unreachable")
 		}
 	}
+	return false
 }

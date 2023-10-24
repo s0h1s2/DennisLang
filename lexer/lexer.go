@@ -142,6 +142,11 @@ start:
 				lex.next()
 				return lex.makeToken(token.TK_AND, "")
 			}
+		case '.':
+			{
+				lex.next()
+				return lex.makeToken(token.TK_DOT, "")
+			}
 		case '<':
 			{
 				lex.next()

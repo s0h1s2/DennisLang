@@ -24,6 +24,7 @@ const (
 	TK_GREATERTHAN
 	TK_GREATEREQUAL
 	TK_LESSEQUAL
+	TK_DOT
 	// KEYWORDS
 	keywords_begin
 	TK_LET
@@ -50,6 +51,7 @@ var tokenKindString = [...]string{
 	TK_OPENBRACE:    "{",
 	TK_CLOSEBRACE:   "}",
 	TK_AND:          "&",
+	TK_DOT:          ".",
 	TK_LESSTHAN:     "<",
 	TK_GREATERTHAN:  ">",
 	TK_GREATEREQUAL: ">=",

@@ -22,6 +22,7 @@ const (
 	COMPARISON
 	TERM
 	FACTOR
+	CALL
 )
 
 func (p *Parser) peekToken() *token.Token {
@@ -93,6 +94,8 @@ func getPreced(tk *token.Token) Precedence {
 		fallthrough
 	case token.TK_LESSEQUAL:
 		return COMPARISON
+	case token.TK_DOT:
+		return CALL
 	}
 	return LOWEST
 
@@ -166,6 +169,18 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 	p.inRHS = old
 	return &ast.ExprAssign{Left: left, Right: right, Pos: currentToken.Pos}
 }
+func (p *Parser) parseGetField(left ast.Expr) ast.Expr {
+	p.consumeToken() // consume '.'
+	prec := p.currPreced()
+	println(prec)
+	val, ok := left.(*ast.ExprIdent)
+	if !ok {
+		p.reportHere("%s", "Left hand side must be an identifier.")
+		return nil
+	}
+	right := p.parseExpression(prec)
+	return &ast.ExprGet{Right: right, Name: val.Name, Pos: val.Pos}
+}
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	switch p.currentToken().Kind {
@@ -188,6 +203,10 @@ func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	case token.TK_ASSIGN:
 		{
 			return p.parseAssignment(left), true
+		}
+	case token.TK_DOT:
+		{
+			return p.parseGetField(left), true
 		}
 	}
 	return nil, false
@@ -336,17 +355,17 @@ func (p *Parser) hasError() bool {
 }
 func (p *Parser) parseField() *ast.Field {
 	name := p.expectToken(token.TK_IDENT)
-	if name == nil {
-		return nil
-	}
 	p.expectToken(token.TK_COLON)
 	typ := p.parseType()
-	return &ast.Field{Name: name.Literal, Type: typ}
+	if p.hasError() {
+		return nil
+	}
+	return &ast.Field{Name: name.Literal, Type: typ, Pos: name.Pos}
 }
 func (p *Parser) parseStruct() ast.Decl {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_OPENBRACE)
-	fields := make([]*ast.Field, 4)
+	fields := make([]*ast.Field, 0, 4)
 	for !p.atEnd() && !p.matchToken(token.TK_CLOSEBRACE) {
 		fields = append(fields, p.parseField())
 		if p.expectToken(token.TK_SEMICOLON) == nil {

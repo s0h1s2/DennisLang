@@ -28,6 +28,7 @@ type DeclFunction struct {
 	End     error.Position
 }
 type Field struct {
+	Pos  error.Position
 	Name string
 	Type types.TypeSpec
 }
@@ -78,6 +79,11 @@ type ExprAssign struct {
 	Pos   error.Position
 	Left  Expr
 	Right Expr
+}
+type ExprGet struct {
+	Pos   error.Position
+	Right Expr
+	Name  string
 }
 
 type ExprIdent struct {
@@ -150,7 +156,10 @@ func (e *ExprAssign) exprNode() {}
 func (e *ExprAssign) GetPos() error.Position {
 	return e.Pos
 }
-
+func (e *ExprGet) exprNode() {}
+func (e *ExprGet) GetPos() error.Position {
+	return e.Pos
+}
 func (e *ExprBoolean) exprNode() {}
 func (e *ExprBoolean) GetPos() error.Position {
 	return e.Pos

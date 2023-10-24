@@ -116,6 +116,9 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 			right := checkExpr(node.Right, expectedType)
 			areTypesEqual(node.GetPos(), left, right)
 		}
+	case *ast.ExprGet:
+		{
+		}
 	case *ast.ExprBinary:
 		{
 			left := checkExpr(node.Left, nil)
