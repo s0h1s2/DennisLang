@@ -1,5 +1,7 @@
 package checker
 
+/*package checker
+
 import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
@@ -162,4 +164,4 @@ func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
 		return typeResult
 	}
 	return symTable.GetObj("void").Type
-}
+}*/

@@ -15,16 +15,13 @@ const (
 
 type Object struct {
 	Kind ObjectKind
-	// Node  ast.Node
-	Type  *types.Type
-	Scope *Scope
+	Type *types.Type
 }
 
-func NewObj(kind ObjectKind, typee *types.Type, scope *Scope) *Object {
+func NewObj(kind ObjectKind, typee *types.Type) *Object {
 	return &Object{
-		Kind:  kind,
-		Type:  typee,
-		Scope: scope,
+		Kind: kind,
+		Type: typee,
 	}
 }
 func NewTypeObj(typee *types.Type) *Object {
@@ -32,7 +29,4 @@ func NewTypeObj(typee *types.Type) *Object {
 		Kind: TYPE,
 		Type: typee,
 	}
-}
-func (o *Object) GetScope() *Scope {
-	return o.Scope
 }

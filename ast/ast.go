@@ -19,7 +19,6 @@ type Decl interface {
 	Node
 	declNode()
 }
-type DeclBad struct{}
 type DeclFunction struct {
 	Pos     error.Position
 	Name    string

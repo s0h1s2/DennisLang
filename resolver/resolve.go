@@ -7,13 +7,12 @@ import (
 	"github.com/s0h1s2/types"
 )
 
-var handler *error.DiagnosticBag
-
 type Table struct {
 	symbols *scope.Scope
 }
 
 var table *Table
+var handler *error.DiagnosticBag
 
 func InitTable() *Table {
 	t := Table{symbols: scope.NewScope(nil)}
@@ -25,7 +24,98 @@ func InitTable() *Table {
 	t.symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
 	return &t
 }
-func declareStruct(decl *ast.DeclStruct) {
+func Resolve(program []ast.Decl, bag *error.DiagnosticBag) *Table {
+	println("----RESOLVER----")
+	table = InitTable()
+	handler = bag
+	for _, decl := range program {
+		resolveDecl(decl)
+	}
+	return table
+}
+func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
+	switch t := typee.(type) {
+	case *types.TypeName:
+		{
+			if table.symbols.Lookup(t.Name) {
+				obj := table.symbols.GetObj(t.Name)
+				if obj.Kind != scope.TYPE {
+					handler.ReportError(typee.GetPos(), "Type '%s' must be a type not variable name or function name", t.Name)
+					return nil, false
+				}
+				return obj.Type, true
+			}
+			handler.ReportError(typee.GetPos(), "Type '%s' doesn't exist", t.Name)
+		}
+	case *types.TypePtr:
+		{
+			isTypeExist(t.Base)
+		}
+	}
+
+	return nil, false
+}
+func resolveDecl(decl ast.Decl) DeclNode {
+	switch node := decl.(type) {
+	case *ast.DeclFunction:
+		{
+			if table.symbols.LookupOnce(node.Name) {
+				handler.ReportError(node.Pos, "Can't redeclare function '%s' more than once", node.Name)
+				return nil
+			}
+			table.symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
+			resolveStmt(node.Body, nil)
+		}
+	}
+	return &DeclFunction{}
+}
+
+func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
+	pos := stmt.GetPos()
+	switch node := stmt.(type) {
+	case *ast.StmtLet:
+		{
+			if !currScope.LookupOnce(node.Name) {
+				typ, ok := isTypeExist(node.Type)
+				if !ok {
+					return nil
+				}
+				currScope.Define(node.Name, scope.NewObj(scope.VAR, nil))
+				if node.Init != nil {
+					resolveExpr(node.Init, currScope)
+				}
+				return &StmtLet{Name: node.Name, Scope: currScope, Type: typ, Pos: node.Pos}
+			}
+			handler.ReportError(pos, "Can't redeclare '%s' variable more than once in same block", node.Name)
+		}
+	case *ast.StmtBlock:
+		{
+			s := scope.NewScope(currScope)
+			for _, stmt := range node.Block {
+				resolveStmt(stmt, s)
+			}
+		}
+	}
+	return nil
+}
+func resolveExpr(expr ast.Expr, scope *scope.Scope) {
+	pos := expr.GetPos()
+	switch node := expr.(type) {
+	case *ast.ExprBinary:
+		{
+			resolveExpr(node.Left, scope)
+			resolveExpr(node.Right, scope)
+		}
+	case *ast.ExprIdent:
+		{
+			if !scope.Lookup(node.Name) {
+				handler.ReportError(pos, "Variable '%s' not found", node.Name)
+			}
+		}
+	}
+}
+
+/*func declareStruct(decl *ast.DeclStruct) {
 	if table.symbols.Lookup(decl.Name) {
 		handler.ReportError(decl.GetPos(), "Can't redeclare struct '%s' more than once", decl.Name)
 	}
@@ -209,4 +299,4 @@ func resolver(node ast.Node, currScope *scope.Scope) bool {
 		}
 	}
 	return false
-}
+}*/

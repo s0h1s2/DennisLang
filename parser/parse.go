@@ -295,11 +295,12 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 	return &ast.StmtBlock{Block: stmts}
 }
 func (p *Parser) parseBaseType() types.TypeSpec {
-	name := p.expectToken(token.TK_IDENT)
-	if name == nil {
-		return nil
+	if p.matchToken(token.TK_IDENT) {
+		name := p.expectToken(token.TK_IDENT)
+		return &types.TypeName{Name: name.Literal, Pos: name.Pos}
 	}
-	return &types.TypeName{Name: name.Literal, Pos: name.Pos}
+	p.reportHere("Expected type but got '%s'", p.currentToken().Kind.String())
+	return nil
 }
 func (p *Parser) parseType() types.TypeSpec {
 	var left types.TypeSpec
