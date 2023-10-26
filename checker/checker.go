@@ -1,167 +1,83 @@
 package checker
 
-/*package checker
-
 import (
-	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
-	"github.com/s0h1s2/scope"
-	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
-var symTable *resolver.Table
-var currScope *scope.Scope
-var prevScope *scope.Scope
-var declerations []ast.Decl
-var handler *error.DiagnosticBag
-var functionName string
-
-func enterScope(scope *scope.Scope) {
-	prevScope = currScope
-	currScope = scope
-}
-func leaveScope() {
-	currScope = prevScope
+type checker struct {
+	handler  *error.DiagnosticBag
+	symTable *resolver.Table
 }
 
-func TypeChecker(table *resolver.Table, decls []ast.Decl, bag *error.DiagnosticBag) {
-	println("----TYPECHECKER----")
-	symTable = table
-	handler = bag
+func Check(decls []resolver.DeclNode, table *resolver.Table, handler *error.DiagnosticBag) {
+	println("----CHECKER----")
+	c := &checker{handler: handler, symTable: table}
 	for _, decl := range decls {
-		checkDecl(decl)
+		c.checkDecl(decl)
 	}
+
 }
-func areTypesEqual(pos error.Position, type1 *types.Type, type2 *types.Type) bool {
+func (c *checker) areTypesEqual(type1 *types.Type, type2 *types.Type) bool {
+	if type1 == nil || type2 == nil {
+		return false
+	}
 	if type1.TypeId == type2.TypeId {
 		return true
 	}
-	handler.ReportError(pos, "Expected '%s' type but got '%s' type", type1.TypeName, type2.TypeName)
 	return false
 }
-func checkDecl(decl ast.Decl) {
+func (c *checker) checkDecl(decl resolver.DeclNode) {
 	switch node := decl.(type) {
-	case *ast.DeclFunction:
+	case *resolver.DeclFunction:
 		{
-			enterScope(symTable.GetObj(node.Name).GetScope())
-			functionName = node.Name
-			for _, stmt := range node.Body.Block {
-				checkStmt(stmt)
-			}
-			leaveScope()
+			c.checkFunction(node)
 		}
 	}
 }
-
-func checkStmt(stmt ast.Stmt) {
-	pos := stmt.GetPos()
+func (c *checker) checkFunction(fun *resolver.DeclFunction) {
+	c.checkStmt(fun.Body)
+}
+func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 	switch node := stmt.(type) {
-	case *ast.StmtLet:
+	case *resolver.StmtBlock:
 		{
-			variableType := currScope.GetObj(node.Name).Type
+			for _, stmt := range node.Body {
+				c.checkStmt(stmt)
+			}
+		}
+	case *resolver.StmtLet:
+		{
 			if node.Init != nil {
-				result := checkExpr(node.Init, variableType)
-				areTypesEqual(pos, variableType, result)
-			}
-		}
-	case *ast.StmtIf:
-		{
-			cond := checkExpr(node.Cond, nil)
-			if cond.Kind != types.TYPE_BOOL {
-				handler.ReportError(pos, "if expression must be boolean")
-			}
-			checkStmt(node.Then)
-		}
-	case *ast.StmtBlock:
-		{
-			enterScope(node.Scope)
-			for _, stmt := range node.Block {
-				checkStmt(stmt)
-			}
-			leaveScope()
-		}
-	case *ast.StmtReturn:
-		{
-			returnType := symTable.GetObj(functionName).Type
-			if returnType.Kind == types.TYPE_VOID && node.Result != nil {
-				handler.ReportError(pos, "'%s' function shouldn't return anything", functionName)
-				return
-			}
-			result := checkExpr(node.Result, returnType)
-			areTypesEqual(pos, returnType, result)
-		}
-	case *ast.StmtExpr:
-		{
-			checkExpr(node.Expr, nil)
-		}
-
-	}
-}
-func checkExpr(expr ast.Expr, expectedType *types.Type) *types.Type {
-	var typeResult *types.Type = nil
-	switch node := expr.(type) {
-	case *ast.ExprInt:
-		{
-			typeResult = symTable.GetObj("i8").Type
-		}
-	case *ast.ExprBoolean:
-		{
-			typeResult = symTable.GetObj("bool").Type
-		}
-	case *ast.ExprIdent:
-		{
-			return currScope.GetObj(node.Name).Type
-		}
-	case *ast.ExprAssign:
-		{
-			left := checkExpr(node.Left, expectedType)
-			right := checkExpr(node.Right, expectedType)
-			areTypesEqual(node.GetPos(), left, right)
-		}
-	case *ast.ExprGet:
-		{
-			obj := currScope.GetObj(node.Name)
-			var typResult *types.Type
-			enterScope(symTable.GetObj(obj.Type.TypeName).GetScope())
-			typResult = checkExpr(node.Right, nil)
-			leaveScope()
-			return typResult
-		}
-	case *ast.ExprBinary:
-		{
-			left := checkExpr(node.Left, nil)
-			right := checkExpr(node.Right, nil)
-			// TODO: check if they are number or ptr
-			switch node.Op {
-			case token.TK_LESSEQUAL:
-				fallthrough
-			case token.TK_LESSTHAN:
-				fallthrough
-			case token.TK_GREATEREQUAL:
-				fallthrough
-			case token.TK_GREATERTHAN:
-				fallthrough
-			case token.TK_EQUAL:
-				{
-					if areTypesEqual(node.GetPos(), left, right) {
-						return symTable.GetObj("bool").Type
-					}
+				exprType := c.checkExpr(node.Init, node.Type)
+				if !c.areTypesEqual(node.Type, exprType) {
+					c.handler.ReportError(node.GetPos(), "Expected '%s' type but got '%s' type", node.Type.TypeName, exprType.TypeName)
 				}
 			}
-			return left
 		}
-	default:
+	}
+	return nil
+}
+
+func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *types.Type {
+	var typeResult *types.Type
+	switch node := expr.(type) {
+	case *resolver.ExprInt:
 		{
-			panic("Unreachable")
+			typeResult = c.symTable.Symbols.GetObj("i8").Type
+		}
+	case *resolver.ExprBool:
+		{
+			typeResult = c.symTable.Symbols.GetObj("bool").Type
+		}
+	case *resolver.ExprIdentifier:
+		{
+			typeResult = node.Type
 		}
 	}
-	if typeResult != nil {
-		if expectedType != nil && expectedType.Kind == typeResult.Kind {
-			return expectedType
-		}
-		return typeResult
+	if typeResult.Kind == expectedType.Kind {
+		return expectedType
 	}
-	return symTable.GetObj("void").Type
-}*/
+	return typeResult
+}

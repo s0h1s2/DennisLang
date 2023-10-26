@@ -6,6 +6,17 @@ import (
 	"github.com/s0h1s2/types"
 )
 
+type BinaryOperator = int
+
+const (
+	ADD BinaryOperator = iota
+	SUB
+	MUL
+	DIV
+	AND
+	OR
+)
+
 type Node interface {
 	GetType() *types.Type
 	GetPos() error.Position
@@ -28,7 +39,7 @@ type DeclFunction struct {
 	ReturnType *types.Type
 	StackSize  int
 	Scope      *scope.Scope
-	Body       []StmtNode
+	Body       StmtNode // StmtBlock
 }
 
 type StmtLet struct {
@@ -38,14 +49,20 @@ type StmtLet struct {
 	Scope *scope.Scope
 	Type  *types.Type
 }
-type ExprLit struct {
+type StmtBlock struct {
+	Scope *scope.Scope
+	Body  []StmtNode
+}
+type ExprInt struct {
 	Value string
 }
+type ExprBool struct {
+	Value string
+}
+
 type ExprIdentifier struct {
-	Name     string
-	typee    *types.Type
-	StackPos int
-	Scope    *scope.Scope
+	Name string
+	Type *types.Type
 }
 
 func (d *DeclFunction) declNode() {}
@@ -68,4 +85,47 @@ func (s *StmtLet) GetPos() error.Position {
 }
 func (s *StmtLet) GetScope() *scope.Scope {
 	return s.Scope
+}
+func (d *StmtBlock) stmtNode() {}
+func (d *StmtBlock) GetType() *types.Type {
+	return nil
+}
+func (s *StmtBlock) GetPos() error.Position {
+	return error.Position{}
+}
+func (s *StmtBlock) GetScope() *scope.Scope {
+	return s.Scope
+}
+
+func (e *ExprIdentifier) exprNode() {}
+func (e *ExprIdentifier) GetType() *types.Type {
+	return nil
+}
+func (e *ExprIdentifier) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprIdentifier) GetScope() *scope.Scope {
+	return nil
+}
+
+func (e *ExprInt) exprNode() {}
+func (e *ExprInt) GetType() *types.Type {
+	return nil
+}
+func (e *ExprInt) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprInt) GetScope() *scope.Scope {
+	return nil
+}
+
+func (e *ExprBool) exprNode() {}
+func (e *ExprBool) GetType() *types.Type {
+	return nil
+}
+func (e *ExprBool) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprBool) GetScope() *scope.Scope {
+	return nil
 }

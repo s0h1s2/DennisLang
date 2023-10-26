@@ -1,3 +1,7 @@
+fn typechecking():i8{
+  let a:i8=true;
+  return 1;
+}
 fn main():i8{
   let a:i8=1;
   let e:i8=1;
@@ -11,7 +15,7 @@ fn main():i8{
           let a:i64=1;
           let b:bool=true;
           {
-            let a:bool=e+a*n;
+            let a:bool=e+a;
           }
         }
       }

@@ -8,37 +8,38 @@ import (
 )
 
 type Table struct {
-	symbols *scope.Scope
+	Symbols *scope.Scope
 }
 
 var table *Table
 var handler *error.DiagnosticBag
 
 func InitTable() *Table {
-	t := Table{symbols: scope.NewScope(nil)}
-	t.symbols.Define("i8", scope.NewTypeObj(types.NewType("i8", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i16", scope.NewTypeObj(types.NewType("i16", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i32", scope.NewTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
-	t.symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
-	t.symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
+	t := Table{Symbols: scope.NewScope(nil)}
+	t.Symbols.Define("i8", scope.NewTypeObj(types.NewType("i8", types.TYPE_INT, 1, 1)))
+	t.Symbols.Define("i16", scope.NewTypeObj(types.NewType("i16", types.TYPE_INT, 1, 1)))
+	t.Symbols.Define("i32", scope.NewTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
+	t.Symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
+	t.Symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
+	t.Symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
 	return &t
 }
-func Resolve(program []ast.Decl, bag *error.DiagnosticBag) *Table {
+func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) {
 	println("----RESOLVER----")
 	table = InitTable()
 	handler = bag
+	var decls []DeclNode
 	for _, decl := range program {
-		resolveDecl(decl)
+		decls = append(decls, resolveDecl(decl))
 	}
-	return table
+	return table, decls
 }
 func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
 	switch t := typee.(type) {
 	case *types.TypeName:
 		{
-			if table.symbols.Lookup(t.Name) {
-				obj := table.symbols.GetObj(t.Name)
+			if table.Symbols.Lookup(t.Name) {
+				obj := table.Symbols.GetObj(t.Name)
 				if obj.Kind != scope.TYPE {
 					handler.ReportError(typee.GetPos(), "Type '%s' must be a type not variable name or function name", t.Name)
 					return nil, false
@@ -59,15 +60,21 @@ func resolveDecl(decl ast.Decl) DeclNode {
 	switch node := decl.(type) {
 	case *ast.DeclFunction:
 		{
-			if table.symbols.LookupOnce(node.Name) {
+			if table.Symbols.LookupOnce(node.Name) {
 				handler.ReportError(node.Pos, "Can't redeclare function '%s' more than once", node.Name)
 				return nil
 			}
-			table.symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
-			resolveStmt(node.Body, nil)
+			typ, ok := isTypeExist(node.RetType)
+			if !ok {
+				return nil
+			}
+			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
+			resolvedBody := resolveStmt(node.Body, nil)
+			return &DeclFunction{Scope: resolvedBody.GetScope(), Name: node.Name, Body: resolvedBody, ReturnType: typ}
+
 		}
 	}
-	return &DeclFunction{}
+	return nil
 }
 
 func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
@@ -81,24 +88,28 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 					return nil
 				}
 				currScope.Define(node.Name, scope.NewObj(scope.VAR, nil))
+				var resolvedExpr ExprNode
 				if node.Init != nil {
-					resolveExpr(node.Init, currScope)
+					resolvedExpr = resolveExpr(node.Init, currScope)
 				}
-				return &StmtLet{Name: node.Name, Scope: currScope, Type: typ, Pos: node.Pos}
+
+				return &StmtLet{Name: node.Name, Init: resolvedExpr, Scope: currScope, Type: typ, Pos: node.Pos}
 			}
 			handler.ReportError(pos, "Can't redeclare '%s' variable more than once in same block", node.Name)
 		}
 	case *ast.StmtBlock:
 		{
 			s := scope.NewScope(currScope)
+			var resolvedStmts []StmtNode
 			for _, stmt := range node.Block {
-				resolveStmt(stmt, s)
+				resolvedStmts = append(resolvedStmts, resolveStmt(stmt, s))
 			}
+			return &StmtBlock{Scope: s, Body: resolvedStmts}
 		}
 	}
 	return nil
 }
-func resolveExpr(expr ast.Expr, scope *scope.Scope) {
+func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
 	pos := expr.GetPos()
 	switch node := expr.(type) {
 	case *ast.ExprBinary:
@@ -106,13 +117,23 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope) {
 			resolveExpr(node.Left, scope)
 			resolveExpr(node.Right, scope)
 		}
+	case *ast.ExprInt:
+		{
+			return &ExprInt{Value: node.Value}
+		}
+	case *ast.ExprBoolean:
+		{
+			return &ExprBool{Value: "1"}
+		}
 	case *ast.ExprIdent:
 		{
 			if !scope.Lookup(node.Name) {
 				handler.ReportError(pos, "Variable '%s' not found", node.Name)
 			}
+			return &ExprIdentifier{Name: node.Name, Type: scope.GetObj(node.Name).Type}
 		}
 	}
+	return nil
 }
 
 /*func declareStruct(decl *ast.DeclStruct) {
