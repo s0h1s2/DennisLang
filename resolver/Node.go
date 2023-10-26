@@ -53,6 +53,11 @@ type StmtBlock struct {
 	Scope *scope.Scope
 	Body  []StmtNode
 }
+type StmtReturn struct {
+	Scope  *scope.Scope
+	Result ExprNode
+}
+
 type ExprInt struct {
 	Value string
 }
@@ -97,6 +102,16 @@ func (s *StmtBlock) GetScope() *scope.Scope {
 	return s.Scope
 }
 
+func (d *StmtReturn) stmtNode() {}
+func (d *StmtReturn) GetType() *types.Type {
+	return nil
+}
+func (s *StmtReturn) GetPos() error.Position {
+	return error.Position{}
+}
+func (s *StmtReturn) GetScope() *scope.Scope {
+	return s.Scope
+}
 func (e *ExprIdentifier) exprNode() {}
 func (e *ExprIdentifier) GetType() *types.Type {
 	return nil

@@ -71,7 +71,6 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
 			resolvedBody := resolveStmt(node.Body, nil)
 			return &DeclFunction{Scope: resolvedBody.GetScope(), Name: node.Name, Body: resolvedBody, ReturnType: typ}
-
 		}
 	}
 	return nil
@@ -87,7 +86,7 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				if !ok {
 					return nil
 				}
-				currScope.Define(node.Name, scope.NewObj(scope.VAR, nil))
+				currScope.Define(node.Name, scope.NewObj(scope.VAR, typ))
 				var resolvedExpr ExprNode
 				if node.Init != nil {
 					resolvedExpr = resolveExpr(node.Init, currScope)
@@ -96,6 +95,13 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				return &StmtLet{Name: node.Name, Init: resolvedExpr, Scope: currScope, Type: typ, Pos: node.Pos}
 			}
 			handler.ReportError(pos, "Can't redeclare '%s' variable more than once in same block", node.Name)
+		}
+	case *ast.StmtReturn:
+		{
+			if node.Result != nil {
+				resolvedExpr := resolveExpr(node.Result, currScope)
+				return &StmtReturn{Result: resolvedExpr}
+			}
 		}
 	case *ast.StmtBlock:
 		{

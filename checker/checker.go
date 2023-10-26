@@ -7,8 +7,9 @@ import (
 )
 
 type checker struct {
-	handler  *error.DiagnosticBag
-	symTable *resolver.Table
+	handler    *error.DiagnosticBag
+	symTable   *resolver.Table
+	currentFun *resolver.DeclFunction
 }
 
 func Check(decls []resolver.DeclNode, table *resolver.Table, handler *error.DiagnosticBag) {
@@ -37,6 +38,7 @@ func (c *checker) checkDecl(decl resolver.DeclNode) {
 	}
 }
 func (c *checker) checkFunction(fun *resolver.DeclFunction) {
+	c.currentFun = fun
 	c.checkStmt(fun.Body)
 }
 func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
@@ -45,6 +47,15 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 		{
 			for _, stmt := range node.Body {
 				c.checkStmt(stmt)
+			}
+		}
+	case *resolver.StmtReturn:
+		{
+			if node.Result != nil {
+				resultType := c.checkExpr(node.Result, c.currentFun.ReturnType)
+				if !c.areTypesEqual(resultType, c.currentFun.ReturnType) {
+					c.handler.ReportError(node.GetPos(), "Expected '%s' but got '%s' in function return", c.currentFun.ReturnType.TypeName, resultType.TypeName)
+				}
 			}
 		}
 	case *resolver.StmtLet:
@@ -61,7 +72,7 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 }
 
 func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *types.Type {
-	var typeResult *types.Type
+	var typeResult *types.Type = nil
 	switch node := expr.(type) {
 	case *resolver.ExprInt:
 		{
@@ -75,6 +86,10 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		{
 			typeResult = node.Type
 		}
+	}
+	// println(typeResult)
+	if typeResult == nil {
+		return c.symTable.Symbols.GetObj("void").Type
 	}
 	if typeResult.Kind == expectedType.Kind {
 		return expectedType

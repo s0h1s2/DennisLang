@@ -59,10 +59,14 @@ func main() {
 	}
 	file, err := os.Open(filePath)
 	if err != nil {
-		println("Unable to open file")
+		println("Unable to open file.")
 		return
 	}
 	src, err := io.ReadAll(file)
+	if err != nil {
+		println("Unable to read file.")
+		return
+	}
 	file.Close()
 	bag := error.New()
 	lex := lexer.New(bag)
