@@ -12,6 +12,7 @@ type Parser struct {
 	bag        *error.DiagnosticBag
 	tokenIndex int
 	inRHS      bool
+	hadError   bool
 }
 type Precedence byte
 
@@ -21,6 +22,7 @@ const (
 	COMPARISON
 	TERM
 	FACTOR
+	CALL
 )
 
 func (p *Parser) peekToken() *token.Token {
@@ -42,6 +44,7 @@ func (p *Parser) expectToken(kind token.TokenKind) *token.Token {
 		return token
 	}
 	p.reportHere("Expected '%s' but got '%s'", kind.String(), p.currentToken().Kind.String())
+	p.hadError = true
 	return nil
 }
 func (p *Parser) matchToken(kind token.TokenKind) bool {
@@ -61,6 +64,7 @@ func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 		bag:        bag,
 		tokenIndex: 0,
 		inRHS:      false,
+		hadError:   false,
 	}
 }
 func (p *Parser) reportHere(format string, args ...interface{}) {
@@ -90,6 +94,8 @@ func getPreced(tk *token.Token) Precedence {
 		fallthrough
 	case token.TK_LESSEQUAL:
 		return COMPARISON
+	case token.TK_DOT:
+		return CALL
 	}
 	return LOWEST
 
@@ -163,6 +169,17 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 	p.inRHS = old
 	return &ast.ExprAssign{Left: left, Right: right, Pos: currentToken.Pos}
 }
+func (p *Parser) parseGetField(left ast.Expr) ast.Expr {
+	p.consumeToken() // consume '.'
+	prec := p.currPreced()
+	val, ok := left.(*ast.ExprIdent)
+	if !ok {
+		p.reportHere("%s", "Left hand side must be an identifier.")
+		return nil
+	}
+	right := p.parseExpression(prec)
+	return &ast.ExprGet{Right: right, Name: val.Name, Pos: val.Pos}
+}
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	switch p.currentToken().Kind {
@@ -185,6 +202,10 @@ func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
 	case token.TK_ASSIGN:
 		{
 			return p.parseAssignment(left), true
+		}
+	case token.TK_DOT:
+		{
+			return p.parseGetField(left), true
 		}
 	}
 	return nil, false
@@ -274,11 +295,12 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 	return &ast.StmtBlock{Block: stmts}
 }
 func (p *Parser) parseBaseType() types.TypeSpec {
-	name := p.expectToken(token.TK_IDENT)
-	if name == nil {
-		return nil
+	if p.matchToken(token.TK_IDENT) {
+		name := p.expectToken(token.TK_IDENT)
+		return &types.TypeName{Name: name.Literal, Pos: name.Pos}
 	}
-	return &types.TypeName{Name: name.Literal, Pos: name.Pos}
+	p.reportHere("Expected type but got '%s'", p.currentToken().Kind.String())
+	return nil
 }
 func (p *Parser) parseType() types.TypeSpec {
 	var left types.TypeSpec
@@ -310,6 +332,11 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 				p.consumeToken()
 				decls = append(decls, p.parseFunction())
 			}
+		case token.TK_STRUCT:
+			{
+				p.consumeToken()
+				decls = append(decls, p.parseStruct())
+			}
 		default:
 			{
 				p.reportHere("Unable to parse '%s' declaration", p.currentToken().String())
@@ -319,6 +346,43 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 	}
 	return decls
 }
+func (p *Parser) hasError() bool {
+	if p.hadError {
+		p.hadError = false
+		return true
+	}
+	return false
+}
+func (p *Parser) parseField() *ast.Field {
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_COLON)
+	typ := p.parseType()
+	if p.hasError() {
+		return nil
+	}
+	return &ast.Field{Name: name.Literal, Type: typ, Pos: name.Pos}
+}
+func (p *Parser) parseStruct() ast.Decl {
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_OPENBRACE)
+	fields := make([]*ast.Field, 0, 4)
+	for !p.atEnd() && !p.matchToken(token.TK_CLOSEBRACE) {
+		fields = append(fields, p.parseField())
+		if p.expectToken(token.TK_SEMICOLON) == nil {
+			return nil
+		}
+	}
+	p.expectToken(token.TK_CLOSEBRACE)
+
+	if p.hasError() {
+		return nil
+	}
+	return &ast.DeclStruct{
+		Name:   name.Literal,
+		Fields: fields,
+		Pos:    name.Pos,
+	}
+}
 func (p *Parser) parseFunction() *ast.DeclFunction {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_OPENPARAN)
@@ -326,6 +390,9 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	p.expectToken(token.TK_COLON)
 	typeResult := p.parseType()
 	body := p.parseBlock()
+	if p.hasError() {
+		return nil
+	}
 	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}
 }
 func (p *Parser) Parse() []ast.Decl {

@@ -9,6 +9,7 @@ const (
 	TYPE_VOID
 	TYPE_BOOL
 	TYPE_PTR
+	TYPE_TYPE
 )
 
 type Type struct {

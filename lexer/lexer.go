@@ -24,10 +24,13 @@ var keywords Keyword = Keyword{
 	"if":     token.TK_IF,
 	"let":    token.TK_LET,
 	"fn":     token.TK_FN,
+	"struct": token.TK_STRUCT,
 	"return": token.TK_RETURN,
 	"true":   token.TK_TRUE,
 	"false":  token.TK_FALSE,
 }
+
+// var keywords = token.InitKeywords()
 
 func isKeyword(word string) token.TokenKind {
 	if value, ok := keywords[word]; ok {
@@ -107,6 +110,11 @@ func (lex *Lexer) scanIdentOrKeyword() string {
 	}
 	return result
 }
+func (lex *Lexer) scanSingleLineComment() {
+	for !lex.atEnd() && lex.ch != '\n' {
+		lex.next()
+	}
+}
 func (lex *Lexer) getToken() token.Token {
 start:
 	lex.start = lex.current
@@ -133,6 +141,11 @@ start:
 			{
 				lex.next()
 				return lex.makeToken(token.TK_AND, "")
+			}
+		case '.':
+			{
+				lex.next()
+				return lex.makeToken(token.TK_DOT, "")
 			}
 		case '<':
 			{
@@ -192,7 +205,13 @@ start:
 				lex.next()
 				return lex.makeToken(token.TK_SEMICOLON, "")
 			}
-
+		case '/':
+			{
+				lex.next()
+				if lex.ch == '/' {
+					lex.scanSingleLineComment()
+				}
+			}
 		default:
 			{
 				if lex.ch >= '0' && lex.ch <= '9' {

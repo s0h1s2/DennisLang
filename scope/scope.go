@@ -28,12 +28,8 @@ func (s *Scope) LookupOnce(name string) bool {
 	return false
 }
 
-func (s *Scope) Define(name string, obj *Object) bool {
-	if ok := s.Lookup(name); !ok {
-		s.symbols[name] = obj
-		return true
-	}
-	return false
+func (s *Scope) Define(name string, obj *Object) {
+	s.symbols[name] = obj
 }
 
 func (s *Scope) GetObj(name string) *Object {

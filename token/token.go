@@ -24,14 +24,16 @@ const (
 	TK_GREATERTHAN
 	TK_GREATEREQUAL
 	TK_LESSEQUAL
+	TK_DOT
 	// KEYWORDS
 	keywords_begin
 	TK_LET
 	TK_FN
-	TK_RETURN
+	TK_STRUCT
 	TK_IF
 	TK_TRUE
 	TK_FALSE
+	TK_RETURN
 	keywords_end
 
 	TK_EOF
@@ -49,6 +51,7 @@ var tokenKindString = [...]string{
 	TK_OPENBRACE:    "{",
 	TK_CLOSEBRACE:   "}",
 	TK_AND:          "&",
+	TK_DOT:          ".",
 	TK_LESSTHAN:     "<",
 	TK_GREATERTHAN:  ">",
 	TK_GREATEREQUAL: ">=",
@@ -57,6 +60,7 @@ var tokenKindString = [...]string{
 	TK_INTEGER:      "integer",
 	TK_IDENT:        "identifier",
 	TK_RETURN:       "return",
+	TK_STRUCT:       "struct",
 	TK_LET:          "let",
 	TK_FN:           "fn",
 	TK_TRUE:         "true",
@@ -73,7 +77,15 @@ type Token struct {
 	Literal string
 	Pos     error.Position
 }
+type keywordMap = map[string]TokenKind
 
+func InitKeywords() keywordMap {
+	keywords := make(keywordMap, (keywords_end-keywords_begin)+1)
+	for i := keywords_begin + 1; i < keywords_end; i++ {
+		keywords[tokenKindString[i]] = i
+	}
+	return keywords
+}
 func (tk *Token) String() string {
 	lit := "nil"
 	if tk.Literal != "" {

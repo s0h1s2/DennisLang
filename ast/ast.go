@@ -19,13 +19,22 @@ type Decl interface {
 	Node
 	declNode()
 }
-type DeclBad struct{}
 type DeclFunction struct {
 	Pos     error.Position
 	Name    string
 	RetType types.TypeSpec
 	Body    *StmtBlock
 	End     error.Position
+}
+type Field struct {
+	Pos  error.Position
+	Name string
+	Type types.TypeSpec
+}
+type DeclStruct struct {
+	Pos    error.Position
+	Name   string
+	Fields []*Field
 }
 type Stmt interface {
 	Node
@@ -70,7 +79,15 @@ type ExprAssign struct {
 	Left  Expr
 	Right Expr
 }
-
+type ExprGet struct {
+	Pos   error.Position
+	Right Expr
+	Name  string
+}
+type ExprField struct {
+	Pos  error.Position
+	Name string
+}
 type ExprIdent struct {
 	Name string
 	Pos  error.Position
@@ -91,6 +108,10 @@ type ExprBoolean struct {
 
 func (e *DeclFunction) declNode() {}
 func (e *DeclFunction) GetPos() error.Position {
+	return e.Pos
+}
+func (e *DeclStruct) declNode() {}
+func (e *DeclStruct) GetPos() error.Position {
 	return e.Pos
 }
 func (s *StmtLet) stmtNode() {}
@@ -135,6 +156,15 @@ func (e *ExprAddrOf) GetPos() error.Position {
 }
 func (e *ExprAssign) exprNode() {}
 func (e *ExprAssign) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprGet) exprNode() {}
+func (e *ExprGet) GetPos() error.Position {
+	return e.Pos
+}
+
+func (e *ExprField) exprNode() {}
+func (e *ExprField) GetPos() error.Position {
 	return e.Pos
 }
 
