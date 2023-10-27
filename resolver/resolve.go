@@ -13,6 +13,7 @@ type Table struct {
 
 var table *Table
 var handler *error.DiagnosticBag
+var isFieldAccess bool
 
 func InitTable() *Table {
 	t := Table{Symbols: scope.NewScope(nil)}
@@ -78,19 +79,27 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				handler.ReportError(node.Pos, "Can't redeclare struct '%s' more than once", node.Name)
 				return nil
 			}
-			table.Symbols.Define(node.Name, scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_TYPE, 0, 0)))
+
 			structScope := scope.NewScope(nil)
+			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_TYPE, 0, 0))
+			obj.Scope = structScope
+			table.Symbols.Define(node.Name, obj)
 			fields := make([]Field, 0, 4)
 			for _, field := range node.Fields {
 				if structScope.LookupOnce(field.Name) {
 					handler.ReportError(field.Pos, "Can't redeclare '%s' field more than once in struct '%s'", field.Name, node.Name)
 					return nil
 				}
-				structScope.Define(field.Name, nil)
+
 				typ, ok := isTypeExist(field.Type)
 				if !ok {
 					return nil
 				}
+				obj := scope.NewObj(scope.FIELD, typ)
+				if typ.Kind == types.TYPE_TYPE {
+					obj.Scope = table.Symbols.GetObj(typ.TypeName).Scope
+				}
+				structScope.Define(field.Name, obj)
 				fields = append(fields, Field{Name: field.Name, Type: typ})
 			}
 			return &DeclStruct{Name: node.Name, Fields: fields, Pos: node.Pos, Scope: structScope}
@@ -126,6 +135,11 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				return &StmtReturn{Result: resolvedExpr}
 			}
 		}
+	case *ast.StmtExpr:
+		{
+			// TODO: return resolved stmt expr
+			resolveExpr(node.Expr, currScope)
+		}
 	case *ast.StmtBlock:
 		{
 			s := scope.NewScope(currScope)
@@ -146,6 +160,22 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
 			resolveExpr(node.Left, scope)
 			resolveExpr(node.Right, scope)
 		}
+	case *ast.ExprAssign:
+		{
+			resolveExpr(node.Left, scope)
+			resolveExpr(node.Right, scope)
+		}
+	case *ast.ExprGet:
+		{
+			isFieldAccess = true
+			if scope.Lookup(node.Name) {
+				scop := table.Symbols.GetObj(scope.GetObj(node.Name).Type.TypeName).Scope
+				resolveExpr(node.Right, scop)
+			} else {
+				handler.ReportError(pos, "Variable '%s' not found", node.Name)
+			}
+			isFieldAccess = false
+		}
 	case *ast.ExprInt:
 		{
 			return &ExprInt{Value: node.Value}
@@ -157,7 +187,14 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
 	case *ast.ExprIdent:
 		{
 			if !scope.Lookup(node.Name) {
+				if isFieldAccess {
+					handler.ReportError(pos, "Field '%s' not found", node.Name)
+					return nil
+				}
 				handler.ReportError(pos, "Variable '%s' not found", node.Name)
+			}
+			if isFieldAccess {
+				return nil
 			}
 			return &ExprIdentifier{Name: node.Name, Type: scope.GetObj(node.Name).Type}
 		}
