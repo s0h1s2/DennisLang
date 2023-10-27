@@ -18,7 +18,6 @@ func Check(decls []resolver.DeclNode, table *resolver.Table, handler *error.Diag
 	for _, decl := range decls {
 		c.checkDecl(decl)
 	}
-
 }
 func (c *checker) areTypesEqual(type1 *types.Type, type2 *types.Type) bool {
 	if type1 == nil || type2 == nil {
@@ -34,6 +33,9 @@ func (c *checker) checkDecl(decl resolver.DeclNode) {
 	case *resolver.DeclFunction:
 		{
 			c.checkFunction(node)
+		}
+	case *resolver.DeclStruct:
+		{
 		}
 	}
 }
@@ -87,7 +89,6 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 			typeResult = node.Type
 		}
 	}
-	// println(typeResult)
 	if typeResult == nil {
 		return c.symTable.Symbols.GetObj("void").Type
 	}

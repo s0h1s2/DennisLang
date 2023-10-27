@@ -22,6 +22,7 @@ type Node interface {
 	GetPos() error.Position
 	GetScope() *scope.Scope
 }
+
 type DeclNode interface {
 	Node
 	declNode()
@@ -41,7 +42,16 @@ type DeclFunction struct {
 	Scope      *scope.Scope
 	Body       StmtNode // StmtBlock
 }
-
+type Field struct {
+	Name string
+	Type *types.Type
+}
+type DeclStruct struct {
+	Name   string
+	Pos    error.Position
+	Scope  *scope.Scope
+	Fields []Field // TODO: fields need pos
+}
 type StmtLet struct {
 	Name  string
 	Pos   error.Position
@@ -78,6 +88,17 @@ func (d *DeclFunction) GetPos() error.Position {
 	return error.Position{}
 }
 func (d *DeclFunction) GetScope() *scope.Scope {
+	return d.Scope
+}
+
+func (d *DeclStruct) declNode() {}
+func (d *DeclStruct) GetType() *types.Type {
+	return nil
+}
+func (d *DeclStruct) GetPos() error.Position {
+	return error.Position{}
+}
+func (d *DeclStruct) GetScope() *scope.Scope {
 	return d.Scope
 }
 
