@@ -172,13 +172,14 @@ func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
 func (p *Parser) parseGetField(left ast.Expr) ast.Expr {
 	p.consumeToken() // consume '.'
 	prec := p.currPreced()
+	right := p.parseExpression(prec)
 	val, ok := left.(*ast.ExprIdent)
 	if !ok {
 		p.reportHere("%s", "Left hand side must be an identifier.")
 		return nil
 	}
-	right := p.parseExpression(prec)
-	return &ast.ExprGet{Right: right, Name: val.Name, Pos: val.Pos}
+
+	return &ast.ExprGet{Right: right, Name: &ast.ExprField{Name: val.Name}, Pos: val.Pos}
 }
 
 func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
@@ -339,7 +340,7 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 			}
 		default:
 			{
-				p.reportHere("Unable to parse '%s' declaration", p.currentToken().String())
+				p.reportHere("Unable to parse '%s' declaration", p.currentToken().Kind.String())
 				p.consumeToken()
 			}
 		}

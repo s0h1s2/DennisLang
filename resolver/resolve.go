@@ -1,6 +1,8 @@
 package resolver
 
 import (
+	"fmt"
+
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
@@ -121,7 +123,7 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				currScope.Define(node.Name, scope.NewObj(scope.VAR, typ))
 				var resolvedExpr ExprNode
 				if node.Init != nil {
-					resolvedExpr = resolveExpr(node.Init, currScope)
+					resolvedExpr = resolveExpr(node.Init, currScope, nil)
 				}
 
 				return &StmtLet{Name: node.Name, Init: resolvedExpr, Scope: currScope, Type: typ, Pos: node.Pos}
@@ -131,14 +133,15 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	case *ast.StmtReturn:
 		{
 			if node.Result != nil {
-				resolvedExpr := resolveExpr(node.Result, currScope)
+				resolvedExpr := resolveExpr(node.Result, currScope, nil)
 				return &StmtReturn{Result: resolvedExpr}
 			}
 		}
 	case *ast.StmtExpr:
 		{
 			// TODO: return resolved stmt expr
-			resolveExpr(node.Expr, currScope)
+			expr := resolveExpr(node.Expr, currScope, nil)
+			return &StmtExpr{Expr: expr, Scope: currScope}
 		}
 	case *ast.StmtBlock:
 		{
@@ -152,30 +155,26 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	}
 	return nil
 }
-func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
+func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) ExprNode {
 	pos := expr.GetPos()
 	switch node := expr.(type) {
 	case *ast.ExprBinary:
 		{
-			resolveExpr(node.Left, scope)
-			resolveExpr(node.Right, scope)
+			resolveExpr(node.Left, scope, nil)
+			resolveExpr(node.Right, scope, nil)
 		}
 	case *ast.ExprAssign:
 		{
-			resolveExpr(node.Left, scope)
-			resolveExpr(node.Right, scope)
+			left := resolveExpr(node.Left, scope, nil)
+			right := resolveExpr(node.Right, scope, nil)
+			return &ExprAssign{Right: right, Left: left}
 		}
 	case *ast.ExprGet:
 		{
-			isFieldAccess = true
-			if scope.Lookup(node.Name) {
-				scop := table.Symbols.GetObj(scope.GetObj(node.Name).Type.TypeName).Scope
-				resolveExpr(node.Right, scop)
-			} else {
-				handler.ReportError(pos, "Variable '%s' not found", node.Name)
-			}
-			isFieldAccess = false
+			resolveExpr(node.Name, scope, nil)
+			resolveExpr(node.Right, scope, nil)
 		}
+
 	case *ast.ExprInt:
 		{
 			return &ExprInt{Value: node.Value}
@@ -184,19 +183,21 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
 		{
 			return &ExprBool{Value: "1"}
 		}
+	case *ast.ExprField:
+		{
+			println(node.Name)
+		}
 	case *ast.ExprIdent:
 		{
 			if !scope.Lookup(node.Name) {
-				if isFieldAccess {
-					handler.ReportError(pos, "Field '%s' not found", node.Name)
-					return nil
-				}
 				handler.ReportError(pos, "Variable '%s' not found", node.Name)
-			}
-			if isFieldAccess {
 				return nil
 			}
 			return &ExprIdentifier{Name: node.Name, Type: scope.GetObj(node.Name).Type}
+		}
+	default:
+		{
+			panic(fmt.Sprintf("Unhandled node '%T' or Unreachable", node))
 		}
 	}
 	return nil

@@ -82,7 +82,7 @@ type ExprAssign struct {
 type ExprGet struct {
 	Pos   error.Position
 	Right Expr
-	Name  string
+	Name  *ExprField
 }
 type ExprField struct {
 	Pos  error.Position
@@ -96,7 +96,6 @@ type ExprAddrOf struct {
 	Pos   error.Position
 	Right Expr
 }
-
 type ExprInt struct {
 	Pos   error.Position
 	Value string

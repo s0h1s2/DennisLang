@@ -52,6 +52,7 @@ type DeclStruct struct {
 	Scope  *scope.Scope
 	Fields []Field // TODO: fields need pos
 }
+
 type StmtLet struct {
 	Name  string
 	Pos   error.Position
@@ -59,6 +60,11 @@ type StmtLet struct {
 	Scope *scope.Scope
 	Type  *types.Type
 }
+type StmtExpr struct {
+	Expr  ExprNode
+	Scope *scope.Scope
+}
+
 type StmtBlock struct {
 	Scope *scope.Scope
 	Body  []StmtNode
@@ -66,6 +72,16 @@ type StmtBlock struct {
 type StmtReturn struct {
 	Scope  *scope.Scope
 	Result ExprNode
+}
+type ExprAssign struct {
+	Left  ExprNode
+	Right ExprNode
+}
+type ExprGet struct {
+	Name  string
+	Right ExprNode
+	Type  *types.Type
+	Pos   error.Position
 }
 
 type ExprInt struct {
@@ -133,6 +149,28 @@ func (s *StmtReturn) GetPos() error.Position {
 func (s *StmtReturn) GetScope() *scope.Scope {
 	return s.Scope
 }
+
+func (d *StmtExpr) stmtNode() {}
+func (d *StmtExpr) GetType() *types.Type {
+	return nil
+}
+func (s *StmtExpr) GetPos() error.Position {
+	return error.Position{}
+}
+func (s *StmtExpr) GetScope() *scope.Scope {
+	return s.Scope
+}
+
+func (e *ExprAssign) exprNode() {}
+func (e *ExprAssign) GetType() *types.Type {
+	return nil
+}
+func (e *ExprAssign) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprAssign) GetScope() *scope.Scope {
+	return nil
+}
 func (e *ExprIdentifier) exprNode() {}
 func (e *ExprIdentifier) GetType() *types.Type {
 	return nil
@@ -152,6 +190,17 @@ func (e *ExprInt) GetPos() error.Position {
 	return error.Position{}
 }
 func (e *ExprInt) GetScope() *scope.Scope {
+	return nil
+}
+
+func (e *ExprGet) exprNode() {}
+func (e *ExprGet) GetType() *types.Type {
+	return nil
+}
+func (e *ExprGet) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprGet) GetScope() *scope.Scope {
 	return nil
 }
 
