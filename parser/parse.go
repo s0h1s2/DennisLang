@@ -143,7 +143,7 @@ func (p *Parser) parseTerm() ast.Expr {
 
 func (p *Parser) parseCompare() ast.Expr {
 	left := p.parseTerm()
-	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) || p.matchToken(token.TK_GREATEREQUAL) || p.matchToken(token.TK_GREATEREQUAL) {
+	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) || p.matchToken(token.TK_GREATEREQUAL) || p.matchToken(token.TK_GREATERTHAN) {
 		op := p.currentToken()
 		p.consumeToken() // Consume operator
 		left = &ast.ExprBinary{Right: p.parseTerm(), Op: op.Kind, Left: left, Pos: op.Pos}

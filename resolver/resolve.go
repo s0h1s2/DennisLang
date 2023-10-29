@@ -186,9 +186,17 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		}
 	case *ast.ExprField:
 		{
+
 			left := resolveExpr(node.Expr, scope, nil)
+
 			if left != nil {
-				typeName := left.GetType().TypeName
+
+				typ := left.GetType()
+				typeName := typ.TypeName
+				if typ.Kind != types.TYPE_TYPE {
+					handler.ReportError(left.GetPos(), "Primitive type '%s' doesn't have fields", typeName)
+					return nil
+				}
 				structScope := table.Symbols.GetObj(typeName).Scope
 				if structScope.LookupOnce(node.Name) {
 					return &ExprField{Type: structScope.GetObj(node.Name).Type, Name: node.Name}
