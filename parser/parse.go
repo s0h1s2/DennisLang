@@ -112,7 +112,7 @@ func (p *Parser) parseBase() ast.Expr {
 	return expr
 }
 func (p *Parser) parseUnary() ast.Expr {
-	if p.matchToken(token.TK_AND) || p.matchToken(token.TK_STAR) {
+	if p.matchToken(token.TK_AND) || p.matchToken(token.TK_STAR) || p.matchToken(token.TK_BANG) {
 		op := p.currentToken()
 		p.consumeToken()
 		return &ast.ExprUnary{Op: op.Kind, Pos: op.Pos, Right: p.parseUnary()}
@@ -143,7 +143,7 @@ func (p *Parser) parseTerm() ast.Expr {
 
 func (p *Parser) parseCompare() ast.Expr {
 	left := p.parseTerm()
-	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) || p.matchToken(token.TK_GREATEREQUAL) || p.matchToken(token.TK_GREATERTHAN) {
+	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_NOTEQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) || p.matchToken(token.TK_GREATEREQUAL) || p.matchToken(token.TK_GREATERTHAN) {
 		op := p.currentToken()
 		p.consumeToken() // Consume operator
 		left = &ast.ExprBinary{Right: p.parseTerm(), Op: op.Kind, Left: left, Pos: op.Pos}
@@ -186,7 +186,6 @@ func (p *Parser) parseReturn() ast.Stmt {
 func (p *Parser) parseIf() ast.Stmt {
 	pos := p.currentToken().Pos
 	cond := p.parseExpression()
-	p.consumeToken()
 	then := p.parseBlock()
 	return &ast.StmtIf{
 		Cond: cond,

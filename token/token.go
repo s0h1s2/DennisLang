@@ -19,12 +19,14 @@ const (
 	TK_CLOSEPARAN
 	TK_OPENBRACE
 	TK_CLOSEBRACE
+	TK_DOT
+	TK_BANG
 	TK_EQUAL
+	TK_NOTEQUAL
 	TK_LESSTHAN
 	TK_GREATERTHAN
 	TK_GREATEREQUAL
 	TK_LESSEQUAL
-	TK_DOT
 	// KEYWORDS
 	keywords_begin
 	TK_LET
@@ -51,11 +53,13 @@ var tokenKindString = [...]string{
 	TK_OPENBRACE:    "{",
 	TK_CLOSEBRACE:   "}",
 	TK_AND:          "&",
+	TK_BANG:         "!",
 	TK_DOT:          ".",
 	TK_LESSTHAN:     "<",
 	TK_GREATERTHAN:  ">",
 	TK_GREATEREQUAL: ">=",
 	TK_LESSEQUAL:    "<=",
+	TK_NOTEQUAL:     "!=",
 	TK_EQUAL:        "==",
 	TK_INTEGER:      "integer",
 	TK_IDENT:        "identifier",

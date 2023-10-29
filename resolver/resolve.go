@@ -184,6 +184,9 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		{
 			return &ExprBool{Value: "1"}
 		}
+	case *ast.ExprUnary:
+		{
+		}
 	case *ast.ExprField:
 		{
 
@@ -206,6 +209,7 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 			}
 			return left
 		}
+
 	case *ast.ExprIdent:
 		{
 			if !scope.Lookup(node.Name) {
