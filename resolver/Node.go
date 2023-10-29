@@ -77,11 +77,10 @@ type ExprAssign struct {
 	Left  ExprNode
 	Right ExprNode
 }
-type ExprGet struct {
-	Name  string
-	Right ExprNode
-	Type  *types.Type
-	Pos   error.Position
+type ExprField struct {
+	Name string
+	Type *types.Type
+	Pos  error.Position
 }
 
 type ExprInt struct {
@@ -173,7 +172,7 @@ func (e *ExprAssign) GetScope() *scope.Scope {
 }
 func (e *ExprIdentifier) exprNode() {}
 func (e *ExprIdentifier) GetType() *types.Type {
-	return nil
+	return e.Type
 }
 func (e *ExprIdentifier) GetPos() error.Position {
 	return error.Position{}
@@ -193,14 +192,14 @@ func (e *ExprInt) GetScope() *scope.Scope {
 	return nil
 }
 
-func (e *ExprGet) exprNode() {}
-func (e *ExprGet) GetType() *types.Type {
-	return nil
+func (e *ExprField) exprNode() {}
+func (e *ExprField) GetType() *types.Type {
+	return e.Type
 }
-func (e *ExprGet) GetPos() error.Position {
+func (e *ExprField) GetPos() error.Position {
 	return error.Position{}
 }
-func (e *ExprGet) GetScope() *scope.Scope {
+func (e *ExprField) GetScope() *scope.Scope {
 	return nil
 }
 

@@ -91,9 +91,9 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 			}
 			return left
 		}
-	case *resolver.ExprGet:
+	case *resolver.ExprField:
 		{
-			c.checkExpr(node.Right, node.Type)
+			// c.checkExpr(node., node.Type)
 
 		}
 	case *resolver.ExprInt:

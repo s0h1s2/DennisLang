@@ -155,6 +155,7 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	}
 	return nil
 }
+
 func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) ExprNode {
 	pos := expr.GetPos()
 	switch node := expr.(type) {
@@ -185,7 +186,17 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		}
 	case *ast.ExprField:
 		{
-			println(node.Name)
+			left := resolveExpr(node.Expr, scope, nil)
+			if left != nil {
+				typeName := left.GetType().TypeName
+				structScope := table.Symbols.GetObj(typeName).Scope
+				if structScope.LookupOnce(node.Name) {
+					return &ExprField{Type: structScope.GetObj(node.Name).Type, Name: node.Name}
+				} else {
+					handler.ReportError(left.GetPos(), "'%s' doesn't have '%s' field", typeName, node.Name)
+				}
+			}
+			return left
 		}
 	case *ast.ExprIdent:
 		{

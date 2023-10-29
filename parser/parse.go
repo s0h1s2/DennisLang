@@ -99,6 +99,7 @@ func (p *Parser) parsePrimary() ast.Expr {
 			p.reportHere("Unexpected token '%s' in expression", p.currentToken().Kind.String())
 		}
 	}
+	p.consumeToken()
 	return nil
 }
 func (p *Parser) parseBase() ast.Expr {
@@ -142,7 +143,7 @@ func (p *Parser) parseTerm() ast.Expr {
 
 func (p *Parser) parseCompare() ast.Expr {
 	left := p.parseTerm()
-	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) {
+	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) || p.matchToken(token.TK_GREATEREQUAL) || p.matchToken(token.TK_GREATEREQUAL) {
 		op := p.currentToken()
 		p.consumeToken() // Consume operator
 		left = &ast.ExprBinary{Right: p.parseTerm(), Op: op.Kind, Left: left, Pos: op.Pos}
@@ -152,14 +153,9 @@ func (p *Parser) parseCompare() ast.Expr {
 func (p *Parser) parseAssignment() ast.Expr {
 	left := p.parseCompare()
 	if p.matchToken(token.TK_ASSIGN) {
-		// we have to make sure left hand side is identifier.
-		assign := p.expectToken(token.TK_ASSIGN)
-		val, ok := left.(*ast.ExprIdent)
-		if !ok {
-			p.reportHere("Expcted identifier in left hand side of '=' but got '%s'", p.currentToken().Kind.String())
-			return nil
-		}
-		left = &ast.ExprAssign{Left: val, Right: p.parseExpression(), Pos: assign.Pos}
+		assign := p.currentToken()
+		p.consumeToken()
+		left = &ast.ExprAssign{Left: left, Right: p.parseExpression(), Pos: assign.Pos}
 	}
 	return left
 }
@@ -224,7 +220,6 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 		default:
 			{
 				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression()})
-				p.consumeToken()
 				p.expectToken(token.TK_SEMICOLON)
 			}
 		}
