@@ -1,6 +1,8 @@
 package checker
 
 import (
+	"fmt"
+
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
 	"github.com/s0h1s2/types"
@@ -60,6 +62,10 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 				}
 			}
 		}
+	case *resolver.StmtExpr:
+		{
+			c.checkExpr(node.Expr, nil)
+		}
 	case *resolver.StmtLet:
 		{
 			if node.Init != nil {
@@ -76,6 +82,20 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *types.Type {
 	var typeResult *types.Type = nil
 	switch node := expr.(type) {
+	case *resolver.ExprAssign:
+		{
+			left := c.checkExpr(node.Left, expectedType)
+			right := c.checkExpr(node.Right, expectedType)
+			if !c.areTypesEqual(left, right) {
+				c.handler.ReportError(node.GetPos(), "Expected '%s' but got '%s'", left.TypeName, right.TypeName)
+			}
+			return left
+		}
+	case *resolver.ExprGet:
+		{
+			c.checkExpr(node.Right, node.Type)
+
+		}
 	case *resolver.ExprInt:
 		{
 			typeResult = c.symTable.Symbols.GetObj("i8").Type
@@ -86,11 +106,20 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprIdentifier:
 		{
+			println(node.Name)
+			println(node.Type.TypeName)
 			typeResult = node.Type
+		}
+	default:
+		{
+			panic(fmt.Sprintf("Unhandled %T or unreachable\n", node))
 		}
 	}
 	if typeResult == nil {
 		return c.symTable.Symbols.GetObj("void").Type
+	}
+	if expectedType == nil {
+		return typeResult
 	}
 	if typeResult.Kind == expectedType.Kind {
 		return expectedType

@@ -1,6 +1,8 @@
 package resolver
 
 import (
+	"fmt"
+
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
@@ -13,6 +15,7 @@ type Table struct {
 
 var table *Table
 var handler *error.DiagnosticBag
+var isFieldAccess bool
 
 func InitTable() *Table {
 	t := Table{Symbols: scope.NewScope(nil)}
@@ -78,19 +81,27 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				handler.ReportError(node.Pos, "Can't redeclare struct '%s' more than once", node.Name)
 				return nil
 			}
-			table.Symbols.Define(node.Name, scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_TYPE, 0, 0)))
+
 			structScope := scope.NewScope(nil)
+			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_TYPE, 0, 0))
+			obj.Scope = structScope
+			table.Symbols.Define(node.Name, obj)
 			fields := make([]Field, 0, 4)
 			for _, field := range node.Fields {
 				if structScope.LookupOnce(field.Name) {
 					handler.ReportError(field.Pos, "Can't redeclare '%s' field more than once in struct '%s'", field.Name, node.Name)
 					return nil
 				}
-				structScope.Define(field.Name, nil)
+
 				typ, ok := isTypeExist(field.Type)
 				if !ok {
 					return nil
 				}
+				obj := scope.NewObj(scope.FIELD, typ)
+				if typ.Kind == types.TYPE_TYPE {
+					obj.Scope = table.Symbols.GetObj(typ.TypeName).Scope
+				}
+				structScope.Define(field.Name, obj)
 				fields = append(fields, Field{Name: field.Name, Type: typ})
 			}
 			return &DeclStruct{Name: node.Name, Fields: fields, Pos: node.Pos, Scope: structScope}
@@ -112,7 +123,7 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				currScope.Define(node.Name, scope.NewObj(scope.VAR, typ))
 				var resolvedExpr ExprNode
 				if node.Init != nil {
-					resolvedExpr = resolveExpr(node.Init, currScope)
+					resolvedExpr = resolveExpr(node.Init, currScope, nil)
 				}
 
 				return &StmtLet{Name: node.Name, Init: resolvedExpr, Scope: currScope, Type: typ, Pos: node.Pos}
@@ -122,9 +133,15 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	case *ast.StmtReturn:
 		{
 			if node.Result != nil {
-				resolvedExpr := resolveExpr(node.Result, currScope)
+				resolvedExpr := resolveExpr(node.Result, currScope, nil)
 				return &StmtReturn{Result: resolvedExpr}
 			}
+		}
+	case *ast.StmtExpr:
+		{
+			// TODO: return resolved stmt expr
+			expr := resolveExpr(node.Expr, currScope, nil)
+			return &StmtExpr{Expr: expr, Scope: currScope}
 		}
 	case *ast.StmtBlock:
 		{
@@ -138,14 +155,26 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	}
 	return nil
 }
-func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
+func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) ExprNode {
 	pos := expr.GetPos()
 	switch node := expr.(type) {
 	case *ast.ExprBinary:
 		{
-			resolveExpr(node.Left, scope)
-			resolveExpr(node.Right, scope)
+			resolveExpr(node.Left, scope, nil)
+			resolveExpr(node.Right, scope, nil)
 		}
+	case *ast.ExprAssign:
+		{
+			left := resolveExpr(node.Left, scope, nil)
+			right := resolveExpr(node.Right, scope, nil)
+			return &ExprAssign{Right: right, Left: left}
+		}
+	case *ast.ExprGet:
+		{
+			resolveExpr(node.Name, scope, nil)
+			resolveExpr(node.Right, scope, nil)
+		}
+
 	case *ast.ExprInt:
 		{
 			return &ExprInt{Value: node.Value}
@@ -154,12 +183,21 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope) ExprNode {
 		{
 			return &ExprBool{Value: "1"}
 		}
+	case *ast.ExprField:
+		{
+			println(node.Name)
+		}
 	case *ast.ExprIdent:
 		{
 			if !scope.Lookup(node.Name) {
 				handler.ReportError(pos, "Variable '%s' not found", node.Name)
+				return nil
 			}
 			return &ExprIdentifier{Name: node.Name, Type: scope.GetObj(node.Name).Type}
+		}
+	default:
+		{
+			panic(fmt.Sprintf("Unhandled node '%T' or Unreachable", node))
 		}
 	}
 	return nil

@@ -10,12 +10,14 @@ type ObjectKind int
 const (
 	FN ObjectKind = iota
 	VAR
+	FIELD
 	TYPE
 )
 
 type Object struct {
-	Kind ObjectKind
-	Type *types.Type
+	Kind  ObjectKind
+	Type  *types.Type
+	Scope *Scope
 }
 
 func NewObj(kind ObjectKind, typee *types.Type) *Object {

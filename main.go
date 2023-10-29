@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/s0h1s2/ast"
-	"github.com/s0h1s2/checker"
+	// "github.com/s0h1s2/checker"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
 	"github.com/s0h1s2/parser"
@@ -82,12 +82,12 @@ func main() {
 		return
 	}
 
-	table, resolvedDecls := resolver.Resolve(tree, bag)
+	resolver.Resolve(tree, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		return
 	}
-	checker.Check(resolvedDecls, table, bag)
+	//checker.Check(resolvedDecls, table, bag)
 	if bag.GotErrors() {
 		bag.PrintErrors()
 		return
