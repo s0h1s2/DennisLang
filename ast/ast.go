@@ -87,15 +87,18 @@ type ExprGet struct {
 type ExprField struct {
 	Pos  error.Position
 	Name string
+	Expr Expr
 }
 type ExprIdent struct {
 	Name string
 	Pos  error.Position
 }
-type ExprAddrOf struct {
+type ExprUnary struct {
 	Pos   error.Position
+	Op    token.TokenKind
 	Right Expr
 }
+
 type ExprInt struct {
 	Pos   error.Position
 	Value string
@@ -149,8 +152,8 @@ func (e *ExprIdent) GetPos() error.Position {
 	return e.Pos
 }
 
-func (e *ExprAddrOf) exprNode() {}
-func (e *ExprAddrOf) GetPos() error.Position {
+func (e *ExprUnary) exprNode() {}
+func (e *ExprUnary) GetPos() error.Position {
 	return e.Pos
 }
 func (e *ExprAssign) exprNode() {}

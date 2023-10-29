@@ -14,16 +14,6 @@ type Parser struct {
 	inRHS      bool
 	hadError   bool
 }
-type Precedence byte
-
-const (
-	LOWEST Precedence = iota
-	ASSIGN
-	COMPARISON
-	TERM
-	FACTOR
-	CALL
-)
 
 func (p *Parser) peekToken() *token.Token {
 	if p.tokenIndex+1 < len(p.tokens) {
@@ -63,7 +53,6 @@ func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 		tokens:     tokens,
 		bag:        bag,
 		tokenIndex: 0,
-		inRHS:      false,
 		hadError:   false,
 	}
 }
@@ -76,41 +65,6 @@ func (p *Parser) parseIdent() ast.Expr {
 func (p *Parser) parseInt() ast.Expr {
 	return &ast.ExprInt{Value: p.currentToken().Literal}
 }
-func getPreced(tk *token.Token) Precedence {
-	switch tk.Kind {
-	case token.TK_PLUS:
-		return TERM
-	case token.TK_STAR:
-		return FACTOR
-	case token.TK_ASSIGN:
-		return ASSIGN
-	case token.TK_EQUAL:
-		fallthrough
-	case token.TK_GREATERTHAN:
-		fallthrough
-	case token.TK_LESSTHAN:
-		fallthrough
-	case token.TK_GREATEREQUAL:
-		fallthrough
-	case token.TK_LESSEQUAL:
-		return COMPARISON
-	case token.TK_DOT:
-		return CALL
-	}
-	return LOWEST
-
-}
-func (p *Parser) peekPreced() Precedence {
-	prec := getPreced(p.peekToken())
-	return prec
-}
-func (p *Parser) currPreced() Precedence {
-	prec := getPreced(p.currentToken())
-	if p.inRHS {
-		return prec - 1
-	}
-	return prec
-}
 func (p *Parser) parseBoolean() ast.Expr {
 	val := false
 	if p.currentToken().Kind == token.TK_TRUE {
@@ -118,124 +72,100 @@ func (p *Parser) parseBoolean() ast.Expr {
 	}
 	return &ast.ExprBoolean{Value: val}
 }
-func (p *Parser) parseLeft() ast.Expr {
+func (p *Parser) parsePrimary() ast.Expr {
 	switch p.currentToken().Kind {
 	case token.TK_IDENT:
 		{
-			return p.parseIdent()
+			ident := p.parseIdent()
+			p.consumeToken()
+			return ident
 		}
 	case token.TK_INTEGER:
 		{
-			return p.parseInt()
+			integer := p.parseInt()
+			p.consumeToken()
+			return integer
 		}
-	case token.TK_AND:
-		{
-			return p.parseAddrOf()
-		}
-	case token.TK_FALSE:
-		fallthrough
 	case token.TK_TRUE:
+		fallthrough
+	case token.TK_FALSE:
 		{
-			return p.parseBoolean()
+			boolean := p.parseBoolean()
+			p.consumeToken()
+			return boolean
 		}
-
+	default:
+		{
+			p.reportHere("Unexpected token '%s' in expression", p.currentToken().Kind.String())
+		}
 	}
 	return nil
 }
-func (p *Parser) parseAddrOf() ast.Expr {
-	prevToken := p.currentToken()
-	p.consumeToken()
-	right := p.parseExpression(LOWEST)
-	return &ast.ExprAddrOf{
-		Pos:   prevToken.Pos,
-		Right: right,
-	}
-}
-
-func (p *Parser) parseBinary(left ast.Expr) ast.Expr {
-	preced := p.currPreced()
-	currentToken := p.currentToken()
-	p.consumeToken()
-	right := p.parseExpression(preced)
-	return &ast.ExprBinary{Left: left, Right: right, Op: currentToken.Kind, Pos: currentToken.Pos}
-}
-func (p *Parser) parseAssignment(left ast.Expr) ast.Expr {
-	old := p.inRHS
-	p.inRHS = true
-	currentToken := p.currentToken()
-	preced := p.currPreced()
-	p.consumeToken()
-	right := p.parseExpression(preced)
-	p.inRHS = old
-	return &ast.ExprAssign{Left: left, Right: right, Pos: currentToken.Pos}
-}
-func (p *Parser) parseGetField(left ast.Expr) ast.Expr {
-	p.consumeToken() // consume '.'
-	prec := p.currPreced()
-	right := p.parseExpression(prec)
-	val, ok := left.(*ast.ExprIdent)
-	if !ok {
-		p.reportHere("%s", "Left hand side must be an identifier.")
-		return nil
-	}
-
-	return &ast.ExprGet{Right: right, Name: &ast.ExprField{Name: val.Name}, Pos: val.Pos}
-}
-
-func (p *Parser) parseInfix(left ast.Expr) (ast.Expr, bool) {
-	switch p.currentToken().Kind {
-	case token.TK_PLUS:
-		fallthrough
-	case token.TK_EQUAL:
-		fallthrough
-	case token.TK_LESSTHAN:
-		fallthrough
-	case token.TK_GREATERTHAN:
-		fallthrough
-	case token.TK_GREATEREQUAL:
-		fallthrough
-	case token.TK_LESSEQUAL:
-		fallthrough
-	case token.TK_STAR:
-		{
-			return p.parseBinary(left), true
-		}
-	case token.TK_ASSIGN:
-		{
-			return p.parseAssignment(left), true
-		}
-	case token.TK_DOT:
-		{
-			return p.parseGetField(left), true
-		}
-	}
-	return nil, false
-}
-func (p *Parser) parseExpression(prec Precedence) ast.Expr {
-	left := p.parseLeft()
-	if left == nil {
-		return nil
-	}
-	for !p.atEnd() && prec < p.peekPreced() {
+func (p *Parser) parseBase() ast.Expr {
+	expr := p.parsePrimary()
+	for p.matchToken(token.TK_DOT) {
 		p.consumeToken()
-		right, ok := p.parseInfix(left)
-		if !ok {
-			return left
-		}
-		left = right
+		name := p.expectToken(token.TK_IDENT)
+		expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+	}
+	return expr
+}
+func (p *Parser) parseUnary() ast.Expr {
+	if p.matchToken(token.TK_AND) || p.matchToken(token.TK_STAR) {
+		op := p.currentToken()
+		p.consumeToken()
+		return &ast.ExprUnary{Op: op.Kind, Pos: op.Pos, Right: p.parseUnary()}
+	} else {
+		return p.parseBase()
+	}
+}
+func (p *Parser) parseFactor() ast.Expr {
+	left := p.parseUnary()
+	for p.matchToken(token.TK_STAR) {
+		op := p.currentToken()
+		p.consumeToken()
+		left = &ast.ExprBinary{Left: left, Right: p.parseUnary(), Op: op.Kind, Pos: op.Pos}
+	}
+	return left
+
+}
+func (p *Parser) parseTerm() ast.Expr {
+	left := p.parseFactor()
+	for p.matchToken(token.TK_PLUS) {
+		op := p.currentToken()
+		p.consumeToken()
+		left = &ast.ExprBinary{Left: left, Right: p.parseFactor(), Op: op.Kind, Pos: op.Pos}
+	}
+	return left
+
+}
+
+func (p *Parser) parseCompare() ast.Expr {
+	left := p.parseTerm()
+	for p.matchToken(token.TK_EQUAL) || p.matchToken(token.TK_LESSTHAN) || p.matchToken(token.TK_LESSEQUAL) {
+		op := p.currentToken()
+		p.consumeToken() // Consume operator
+		left = &ast.ExprBinary{Right: p.parseTerm(), Op: op.Kind, Left: left, Pos: op.Pos}
 	}
 	return left
 }
-func (p *Parser) parseReturn() ast.Stmt {
-	prevToken := p.currentToken()
-	result := p.parseExpression(LOWEST)
-	if result != nil {
-		p.consumeToken()
+func (p *Parser) parseAssignment() ast.Expr {
+	left := p.parseCompare()
+	if p.matchToken(token.TK_ASSIGN) {
+		// we have to make sure left hand side is identifier.
+		assign := p.expectToken(token.TK_ASSIGN)
+		val, ok := left.(*ast.ExprIdent)
+		if !ok {
+			p.reportHere("Expcted identifier in left hand side of '=' but got '%s'", p.currentToken().Kind.String())
+			return nil
+		}
+		left = &ast.ExprAssign{Left: val, Right: p.parseExpression(), Pos: assign.Pos}
 	}
-	p.expectToken(token.TK_SEMICOLON)
-	return &ast.StmtReturn{Result: result, Pos: prevToken.Pos}
+	return left
 }
-
+func (p *Parser) parseExpression() ast.Expr {
+	return p.parseAssignment()
+}
 func (p *Parser) parseVariableStmt() ast.Stmt {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_COLON)
@@ -243,15 +173,23 @@ func (p *Parser) parseVariableStmt() ast.Stmt {
 	var init ast.Expr
 	if p.matchToken(token.TK_ASSIGN) {
 		p.consumeToken()
-		init = p.parseExpression(LOWEST)
-		p.consumeToken()
+		init = p.parseExpression()
 	}
 	p.expectToken(token.TK_SEMICOLON)
 	return &ast.StmtLet{Name: name.Literal, Type: typeSpec, Init: init, Pos: name.Pos}
 }
+func (p *Parser) parseReturn() ast.Stmt {
+	ret := p.expectToken(token.TK_RETURN)
+	var expr ast.Expr
+	if !p.matchToken(token.TK_SEMICOLON) {
+		expr = p.parseExpression()
+	}
+	p.expectToken(token.TK_SEMICOLON)
+	return &ast.StmtReturn{Pos: ret.Pos, Result: expr}
+}
 func (p *Parser) parseIf() ast.Stmt {
 	pos := p.currentToken().Pos
-	cond := p.parseExpression(LOWEST)
+	cond := p.parseExpression()
 	p.consumeToken()
 	then := p.parseBlock()
 	return &ast.StmtIf{
@@ -272,7 +210,6 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			}
 		case token.TK_RETURN:
 			{
-				p.consumeToken()
 				stmts = append(stmts, p.parseReturn())
 			}
 		case token.TK_OPENBRACE:
@@ -286,7 +223,7 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			}
 		default:
 			{
-				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression(LOWEST)})
+				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression()})
 				p.consumeToken()
 				p.expectToken(token.TK_SEMICOLON)
 			}
