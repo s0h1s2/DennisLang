@@ -38,6 +38,7 @@ func (c *checker) checkDecl(decl resolver.DeclNode) {
 		}
 	case *resolver.DeclStruct:
 		{
+			// Maybe compute alignment and size
 		}
 	}
 }
@@ -85,7 +86,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 	case *resolver.ExprAssign:
 		{
 			left := c.checkExpr(node.Left, expectedType)
-			right := c.checkExpr(node.Right, expectedType)
+			right := c.checkExpr(node.Right, left)
 			if !c.areTypesEqual(left, right) {
 				c.handler.ReportError(node.GetPos(), "Expected '%s' but got '%s'", left.TypeName, right.TypeName)
 			}
@@ -93,8 +94,13 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprField:
 		{
-			// c.checkExpr(node., node.Type)
-
+			typeResult = node.Type
+		}
+	case *resolver.ExprUnary:
+		{
+			if node.Op == resolver.REFER && expectedType != nil && expectedType.Kind == types.TYPE_PTR {
+				typeResult = expectedType
+			}
 		}
 	case *resolver.ExprInt:
 		{
@@ -106,8 +112,6 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprIdentifier:
 		{
-			println(node.Name)
-			println(node.Type.TypeName)
 			typeResult = node.Type
 		}
 	default:

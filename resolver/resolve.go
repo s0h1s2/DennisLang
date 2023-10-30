@@ -13,6 +13,9 @@ type Table struct {
 	Symbols *scope.Scope
 }
 
+const POINTER_SIZE = 8
+const POINTER_ALIGNMENT = 8
+
 var table *Table
 var handler *error.DiagnosticBag
 var isFieldAccess bool
@@ -53,7 +56,10 @@ func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
 		}
 	case *types.TypePtr:
 		{
-			isTypeExist(t.Base)
+			val, ok := isTypeExist(t.Base)
+			if ok {
+				return types.NewType("*"+val.TypeName, types.TYPE_PTR, POINTER_SIZE, POINTER_ALIGNMENT), true
+			}
 		}
 	}
 
@@ -69,6 +75,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			}
 			typ, ok := isTypeExist(node.RetType)
 			if !ok {
+
 				return nil
 			}
 			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
@@ -83,7 +90,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			}
 
 			structScope := scope.NewScope(nil)
-			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_TYPE, 0, 0))
+			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_STRUCT, 0, 0))
 			obj.Scope = structScope
 			table.Symbols.Define(node.Name, obj)
 			fields := make([]Field, 0, 4)
@@ -98,7 +105,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 					return nil
 				}
 				obj := scope.NewObj(scope.FIELD, typ)
-				if typ.Kind == types.TYPE_TYPE {
+				if typ.Kind == types.TYPE_STRUCT {
 					obj.Scope = table.Symbols.GetObj(typ.TypeName).Scope
 				}
 				structScope.Define(field.Name, obj)
@@ -125,7 +132,6 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				if node.Init != nil {
 					resolvedExpr = resolveExpr(node.Init, currScope, nil)
 				}
-
 				return &StmtLet{Name: node.Name, Init: resolvedExpr, Scope: currScope, Type: typ, Pos: node.Pos}
 			}
 			handler.ReportError(pos, "Can't redeclare '%s' variable more than once in same block", node.Name)
@@ -170,12 +176,6 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 			right := resolveExpr(node.Right, scope, nil)
 			return &ExprAssign{Right: right, Left: left}
 		}
-	case *ast.ExprGet:
-		{
-			resolveExpr(node.Name, scope, nil)
-			resolveExpr(node.Right, scope, nil)
-		}
-
 	case *ast.ExprInt:
 		{
 			return &ExprInt{Value: node.Value}
@@ -186,6 +186,10 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		}
 	case *ast.ExprUnary:
 		{
+			resolved := resolveExpr(node.Right, scope, nil)
+			if resolved != nil {
+				return &ExprUnary{Type: resolved.GetType(), Op: REFER}
+			}
 		}
 	case *ast.ExprField:
 		{
@@ -193,10 +197,9 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 			left := resolveExpr(node.Expr, scope, nil)
 
 			if left != nil {
-
 				typ := left.GetType()
 				typeName := typ.TypeName
-				if typ.Kind != types.TYPE_TYPE {
+				if typ.Kind != types.TYPE_STRUCT {
 					handler.ReportError(left.GetPos(), "Primitive type '%s' doesn't have fields", typeName)
 					return nil
 				}

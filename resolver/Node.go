@@ -7,6 +7,7 @@ import (
 )
 
 type BinaryOperator = int
+type UnaryOperator = int
 
 const (
 	ADD BinaryOperator = iota
@@ -15,6 +16,12 @@ const (
 	DIV
 	AND
 	OR
+)
+
+const (
+	DEREF UnaryOperator = iota
+	REFER
+	MINUS
 )
 
 type Node interface {
@@ -81,6 +88,12 @@ type ExprField struct {
 	Name string
 	Type *types.Type
 	Pos  error.Position
+}
+type ExprUnary struct {
+	Type *types.Type
+	// Right ExprNode
+	Op  UnaryOperator
+	Pos error.Position
 }
 
 type ExprInt struct {
@@ -192,6 +205,16 @@ func (e *ExprInt) GetScope() *scope.Scope {
 	return nil
 }
 
+func (e *ExprUnary) exprNode() {}
+func (e *ExprUnary) GetType() *types.Type {
+	return e.Type
+}
+func (e *ExprUnary) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprUnary) GetScope() *scope.Scope {
+	return nil
+}
 func (e *ExprField) exprNode() {}
 func (e *ExprField) GetType() *types.Type {
 	return e.Type
