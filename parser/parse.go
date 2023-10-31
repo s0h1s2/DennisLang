@@ -4,7 +4,6 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
-	"github.com/s0h1s2/types"
 )
 
 type Parser struct {
@@ -233,24 +232,24 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 	p.expectToken(token.TK_CLOSEBRACE)
 	return &ast.StmtBlock{Block: stmts}
 }
-func (p *Parser) parseBaseType() types.TypeSpec {
+func (p *Parser) parseBaseType() ast.TypeSpec {
 	if p.matchToken(token.TK_IDENT) {
 		name := p.expectToken(token.TK_IDENT)
-		return &types.TypeName{Name: name.Literal, Pos: name.Pos}
+		return &ast.TypeName{Name: name.Literal, Pos: name.Pos}
 	}
 	p.reportHere("Expected type but got '%s'", p.currentToken().Kind.String())
 	return nil
 }
-func (p *Parser) parseType() types.TypeSpec {
-	var left types.TypeSpec
+func (p *Parser) parseType() ast.TypeSpec {
+	var left ast.TypeSpec
 	prevToken := p.currentToken()
 	for p.matchToken(token.TK_STAR) {
 		p.consumeToken()
-		left = &types.TypePtr{Base: left, Pos: prevToken.Pos}
+		left = &ast.TypePtr{Base: left, Pos: prevToken.Pos}
 	}
 	if left != nil {
 		switch t := left.(type) {
-		case *types.TypePtr:
+		case *ast.TypePtr:
 			{
 				t.Base = p.parseBaseType()
 			}

@@ -4,7 +4,6 @@ import (
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/token"
-	"github.com/s0h1s2/types"
 )
 
 type Node interface {
@@ -22,14 +21,14 @@ type Decl interface {
 type DeclFunction struct {
 	Pos     error.Position
 	Name    string
-	RetType types.TypeSpec
+	RetType TypeSpec
 	Body    *StmtBlock
 	End     error.Position
 }
 type Field struct {
 	Pos  error.Position
 	Name string
-	Type types.TypeSpec
+	Type TypeSpec
 }
 type DeclStruct struct {
 	Pos    error.Position
@@ -48,7 +47,7 @@ type StmtBlock struct {
 type StmtLet struct {
 	Pos  error.Position
 	Name string
-	Type types.TypeSpec
+	Type TypeSpec
 	Init Expr
 }
 type StmtIf struct {

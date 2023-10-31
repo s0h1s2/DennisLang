@@ -18,7 +18,6 @@ const POINTER_ALIGNMENT = 8
 
 var table *Table
 var handler *error.DiagnosticBag
-var isFieldAccess bool
 
 func InitTable() *Table {
 	t := Table{Symbols: scope.NewScope(nil)}
@@ -40,9 +39,9 @@ func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) 
 	}
 	return table, decls
 }
-func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
+func isTypeExist(typee ast.TypeSpec) (*types.Type, bool) {
 	switch t := typee.(type) {
-	case *types.TypeName:
+	case *ast.TypeName:
 		{
 			if table.Symbols.Lookup(t.Name) {
 				obj := table.Symbols.GetObj(t.Name)
@@ -54,7 +53,7 @@ func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
 			}
 			handler.ReportError(typee.GetPos(), "Type '%s' doesn't exist", t.Name)
 		}
-	case *types.TypePtr:
+	case *ast.TypePtr:
 		{
 			val, ok := isTypeExist(t.Base)
 			if ok {
