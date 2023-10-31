@@ -58,7 +58,9 @@ func isTypeExist(typee types.TypeSpec) (*types.Type, bool) {
 		{
 			val, ok := isTypeExist(t.Base)
 			if ok {
-				return types.NewType("*"+val.TypeName, types.TYPE_PTR, POINTER_SIZE, POINTER_ALIGNMENT), true
+				ptr := types.NewType("*"+val.TypeName, types.TYPE_PTR, POINTER_SIZE, POINTER_ALIGNMENT)
+				ptr.Base = val
+				return ptr, true
 			}
 		}
 	}
@@ -75,7 +77,6 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			}
 			typ, ok := isTypeExist(node.RetType)
 			if !ok {
-
 				return nil
 			}
 			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
@@ -145,7 +146,6 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 		}
 	case *ast.StmtExpr:
 		{
-			// TODO: return resolved stmt expr
 			expr := resolveExpr(node.Expr, currScope, nil)
 			return &StmtExpr{Expr: expr, Scope: currScope}
 		}
@@ -167,8 +167,9 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 	switch node := expr.(type) {
 	case *ast.ExprBinary:
 		{
-			resolveExpr(node.Left, scope, nil)
-			resolveExpr(node.Right, scope, nil)
+			left := resolveExpr(node.Left, scope, nil)
+			right := resolveExpr(node.Right, scope, nil)
+			return &ExprBinary{Left: left, Right: right, Op: KindToBinary[node.Op]}
 		}
 	case *ast.ExprAssign:
 		{
@@ -188,16 +189,17 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		{
 			resolved := resolveExpr(node.Right, scope, nil)
 			if resolved != nil {
-				return &ExprUnary{Type: resolved.GetType(), Op: REFER}
+				return &ExprUnary{Type: resolved.GetType(), Right: resolved, Op: KindToUnary[node.Op]}
 			}
 		}
 	case *ast.ExprField:
 		{
-
 			left := resolveExpr(node.Expr, scope, nil)
-
 			if left != nil {
 				typ := left.GetType()
+				if typ.Kind == types.TYPE_PTR {
+					typ = typ.Base
+				}
 				typeName := typ.TypeName
 				if typ.Kind != types.TYPE_STRUCT {
 					handler.ReportError(left.GetPos(), "Primitive type '%s' doesn't have fields", typeName)

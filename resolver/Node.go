@@ -3,6 +3,7 @@ package resolver
 import (
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
+	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
@@ -23,6 +24,16 @@ const (
 	REFER
 	MINUS
 )
+
+// TODO: may refactor this.
+var KindToUnary = map[token.TokenKind]UnaryOperator{
+	token.TK_STAR: DEREF,
+	token.TK_AND:  REFER,
+}
+var KindToBinary = map[token.TokenKind]BinaryOperator{
+	token.TK_PLUS: ADD,
+	token.TK_STAR: MUL,
+}
 
 type Node interface {
 	GetType() *types.Type
@@ -84,16 +95,22 @@ type ExprAssign struct {
 	Left  ExprNode
 	Right ExprNode
 }
+type ExprBinary struct {
+	Left  ExprNode
+	Right ExprNode
+	Op    BinaryOperator
+}
+
 type ExprField struct {
 	Name string
 	Type *types.Type
 	Pos  error.Position
 }
 type ExprUnary struct {
-	Type *types.Type
-	// Right ExprNode
-	Op  UnaryOperator
-	Pos error.Position
+	Type  *types.Type
+	Right ExprNode
+	Op    UnaryOperator
+	Pos   error.Position
 }
 
 type ExprInt struct {
@@ -181,6 +198,17 @@ func (e *ExprAssign) GetPos() error.Position {
 	return error.Position{}
 }
 func (e *ExprAssign) GetScope() *scope.Scope {
+	return nil
+}
+
+func (e *ExprBinary) exprNode() {}
+func (e *ExprBinary) GetType() *types.Type {
+	return nil
+}
+func (e *ExprBinary) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprBinary) GetScope() *scope.Scope {
 	return nil
 }
 func (e *ExprIdentifier) exprNode() {}

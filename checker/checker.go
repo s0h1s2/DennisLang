@@ -30,6 +30,10 @@ func (c *checker) areTypesEqual(type1 *types.Type, type2 *types.Type) bool {
 	}
 	return false
 }
+func (c *checker) isPtrType(typee *types.Type) bool {
+	return typee.Kind == types.TYPE_PTR
+}
+
 func (c *checker) checkDecl(decl resolver.DeclNode) {
 	switch node := decl.(type) {
 	case *resolver.DeclFunction:
@@ -99,6 +103,17 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 	case *resolver.ExprUnary:
 		{
 			if node.Op == resolver.REFER && expectedType != nil && expectedType.Kind == types.TYPE_PTR {
+				typeResult = expectedType
+			} else if node.Op == resolver.DEREF {
+				// we assume the right hand must be a variable only
+				n, ok := node.Right.(*resolver.ExprIdentifier)
+				if !ok {
+					c.handler.ReportError(n.GetPos(), "Right hand side of '*' must be a variable")
+				}
+				if !c.isPtrType(node.Type) {
+
+					c.handler.ReportError(node.Pos, "'%s' must be a pointer type", n.Name)
+				}
 				typeResult = expectedType
 			}
 		}

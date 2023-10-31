@@ -94,6 +94,13 @@ func (p *Parser) parsePrimary() ast.Expr {
 			p.consumeToken()
 			return boolean
 		}
+	case token.TK_OPENPARAN:
+		{
+			p.consumeToken()
+			expr := p.parseExpression()
+			p.expectToken(token.TK_CLOSEPARAN)
+			return expr
+		}
 	default:
 		{
 			p.reportHere("Unexpected token '%s' in expression", p.currentToken().Kind.String())
