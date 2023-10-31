@@ -3,10 +3,12 @@ package resolver
 import (
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
+	"github.com/s0h1s2/token"
 	"github.com/s0h1s2/types"
 )
 
 type BinaryOperator = int
+type UnaryOperator = int
 
 const (
 	ADD BinaryOperator = iota
@@ -16,6 +18,22 @@ const (
 	AND
 	OR
 )
+
+const (
+	DEREF UnaryOperator = iota
+	REFER
+	MINUS
+)
+
+// TODO: may refactor this.
+var KindToUnary = map[token.TokenKind]UnaryOperator{
+	token.TK_STAR: DEREF,
+	token.TK_AND:  REFER,
+}
+var KindToBinary = map[token.TokenKind]BinaryOperator{
+	token.TK_PLUS: ADD,
+	token.TK_STAR: MUL,
+}
 
 type Node interface {
 	GetType() *types.Type
@@ -77,10 +95,21 @@ type ExprAssign struct {
 	Left  ExprNode
 	Right ExprNode
 }
-type ExprGet struct {
-	Name  string
+type ExprBinary struct {
+	Left  ExprNode
 	Right ExprNode
+	Op    BinaryOperator
+}
+
+type ExprField struct {
+	Name string
+	Type *types.Type
+	Pos  error.Position
+}
+type ExprUnary struct {
 	Type  *types.Type
+	Right ExprNode
+	Op    UnaryOperator
 	Pos   error.Position
 }
 
@@ -171,9 +200,20 @@ func (e *ExprAssign) GetPos() error.Position {
 func (e *ExprAssign) GetScope() *scope.Scope {
 	return nil
 }
+
+func (e *ExprBinary) exprNode() {}
+func (e *ExprBinary) GetType() *types.Type {
+	return nil
+}
+func (e *ExprBinary) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprBinary) GetScope() *scope.Scope {
+	return nil
+}
 func (e *ExprIdentifier) exprNode() {}
 func (e *ExprIdentifier) GetType() *types.Type {
-	return nil
+	return e.Type
 }
 func (e *ExprIdentifier) GetPos() error.Position {
 	return error.Position{}
@@ -193,14 +233,24 @@ func (e *ExprInt) GetScope() *scope.Scope {
 	return nil
 }
 
-func (e *ExprGet) exprNode() {}
-func (e *ExprGet) GetType() *types.Type {
-	return nil
+func (e *ExprUnary) exprNode() {}
+func (e *ExprUnary) GetType() *types.Type {
+	return e.Type
 }
-func (e *ExprGet) GetPos() error.Position {
+func (e *ExprUnary) GetPos() error.Position {
 	return error.Position{}
 }
-func (e *ExprGet) GetScope() *scope.Scope {
+func (e *ExprUnary) GetScope() *scope.Scope {
+	return nil
+}
+func (e *ExprField) exprNode() {}
+func (e *ExprField) GetType() *types.Type {
+	return e.Type
+}
+func (e *ExprField) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprField) GetScope() *scope.Scope {
 	return nil
 }
 

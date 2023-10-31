@@ -165,6 +165,15 @@ start:
 				}
 				return lex.makeToken(token.TK_GREATERTHAN, "")
 			}
+		case '!':
+			{
+				lex.next()
+				if lex.ch == '=' {
+					lex.next()
+					return lex.makeToken(token.TK_NOTEQUAL, "")
+				}
+				return lex.makeToken(token.TK_BANG, "")
+			}
 		case '=':
 			{
 				lex.next()
