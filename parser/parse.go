@@ -71,12 +71,35 @@ func (p *Parser) parseBoolean() ast.Expr {
 	}
 	return &ast.ExprBoolean{Value: val}
 }
+func (p *Parser) parseCompound(typ ast.TypeSpec) ast.Expr {
+	tk := p.expectToken(token.TK_OPENBRACE)
+	fields := make([]ast.CompoundField, 0, 4)
+	for !p.matchToken(token.TK_CLOSEBRACE) {
+		name := p.expectToken(token.TK_IDENT)
+		if name == nil {
+			p.reportHere("Expected field name in compound initialization")
+			return nil
+		}
+		p.expectToken(token.TK_COLON)
+		init := p.parseExpression()
+		fields = append(fields, ast.CompoundField{Name: name.Literal, Init: init})
+		if !p.matchToken(token.TK_COMMA) {
+			break
+		}
+		p.consumeToken()
+	}
+	p.expectToken(token.TK_CLOSEBRACE)
+	return &ast.ExprCompound{Type: typ, Fields: fields, Pos: tk.Pos}
+}
 func (p *Parser) parsePrimary() ast.Expr {
 	switch p.currentToken().Kind {
 	case token.TK_IDENT:
 		{
 			ident := p.parseIdent()
 			p.consumeToken()
+			if p.matchToken(token.TK_OPENBRACE) {
+				return p.parseCompound(&ast.TypeName{Name: ident.(*ast.ExprIdent).Name})
+			}
 			return ident
 		}
 	case token.TK_INTEGER:
@@ -115,8 +138,6 @@ func (p *Parser) parseBase() ast.Expr {
 			p.consumeToken()
 			name := p.expectToken(token.TK_IDENT)
 			expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
-		} else if p.matchToken(token.TK_OPENBRACE) {
-
 		}
 	}
 	return expr
