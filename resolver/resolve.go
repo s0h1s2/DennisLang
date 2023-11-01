@@ -18,6 +18,7 @@ const POINTER_ALIGNMENT = 8
 
 var table *Table
 var handler *error.DiagnosticBag
+var cachedPtrTypes map[string]*types.Type = make(map[string]*types.Type)
 
 func InitTable() *Table {
 	t := Table{Symbols: scope.NewScope(nil)}
@@ -57,13 +58,17 @@ func isTypeExist(typee ast.TypeSpec) (*types.Type, bool) {
 		{
 			val, ok := isTypeExist(t.Base)
 			if ok {
-				ptr := types.NewType("*"+val.TypeName, types.TYPE_PTR, POINTER_SIZE, POINTER_ALIGNMENT)
+				typeName := "*" + val.TypeName
+				if cachedPtrTypes[typeName] != nil {
+					return cachedPtrTypes[typeName], true
+				}
+				ptr := types.NewType(typeName, types.TYPE_PTR, POINTER_SIZE, POINTER_ALIGNMENT)
 				ptr.Base = val
+				cachedPtrTypes[typeName] = ptr
 				return ptr, true
 			}
 		}
 	}
-
 	return nil, false
 }
 func resolveDecl(decl ast.Decl) DeclNode {
@@ -88,7 +93,6 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				handler.ReportError(node.Pos, "Can't redeclare struct '%s' more than once", node.Name)
 				return nil
 			}
-
 			structScope := scope.NewScope(nil)
 			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_STRUCT, 0, 0))
 			obj.Scope = structScope
@@ -99,7 +103,6 @@ func resolveDecl(decl ast.Decl) DeclNode {
 					handler.ReportError(field.Pos, "Can't redeclare '%s' field more than once in struct '%s'", field.Name, node.Name)
 					return nil
 				}
-
 				typ, ok := isTypeExist(field.Type)
 				if !ok {
 					return nil

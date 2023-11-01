@@ -78,11 +78,7 @@ type ExprAssign struct {
 	Left  Expr
 	Right Expr
 }
-type ExprGet struct {
-	Pos   error.Position
-	Right Expr
-	Name  *ExprField
-}
+
 type ExprField struct {
 	Pos  error.Position
 	Name string
@@ -155,15 +151,11 @@ func (e *ExprUnary) exprNode() {}
 func (e *ExprUnary) GetPos() error.Position {
 	return e.Pos
 }
+
 func (e *ExprAssign) exprNode() {}
 func (e *ExprAssign) GetPos() error.Position {
 	return e.Pos
 }
-func (e *ExprGet) exprNode() {}
-func (e *ExprGet) GetPos() error.Position {
-	return e.Pos
-}
-
 func (e *ExprField) exprNode() {}
 func (e *ExprField) GetPos() error.Position {
 	return e.Pos

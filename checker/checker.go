@@ -9,9 +9,10 @@ import (
 )
 
 type checker struct {
-	handler    *error.DiagnosticBag
-	symTable   *resolver.Table
-	currentFun *resolver.DeclFunction
+	handler          *error.DiagnosticBag
+	symTable         *resolver.Table
+	currentFun       *resolver.DeclFunction
+	isFunReturnValue bool
 }
 
 func Check(decls []resolver.DeclNode, table *resolver.Table, handler *error.DiagnosticBag) {
@@ -48,7 +49,12 @@ func (c *checker) checkDecl(decl resolver.DeclNode) {
 }
 func (c *checker) checkFunction(fun *resolver.DeclFunction) {
 	c.currentFun = fun
+	c.isFunReturnValue = false
 	c.checkStmt(fun.Body)
+	if types.TYPE_VOID != fun.ReturnType.Kind && !c.isFunReturnValue {
+		c.handler.ReportError(fun.GetPos(), "Function '%s' expected to return '%s' type", fun.Name, fun.ReturnType.TypeName)
+	}
+
 }
 func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 	switch node := stmt.(type) {
@@ -60,6 +66,7 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 		}
 	case *resolver.StmtReturn:
 		{
+			c.isFunReturnValue = true
 			if node.Result != nil {
 				resultType := c.checkExpr(node.Result, c.currentFun.ReturnType)
 				if !c.areTypesEqual(resultType, c.currentFun.ReturnType) {
@@ -71,6 +78,7 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 		{
 			c.checkExpr(node.Expr, nil)
 		}
+
 	case *resolver.StmtLet:
 		{
 			if node.Init != nil {
@@ -93,6 +101,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 			right := c.checkExpr(node.Right, left)
 			if !c.areTypesEqual(left, right) {
 				c.handler.ReportError(node.GetPos(), "Expected '%s' but got '%s'", left.TypeName, right.TypeName)
+				return nil
 			}
 			return left
 		}
@@ -100,8 +109,18 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		{
 			typeResult = node.Type
 		}
+	case *resolver.ExprBinary:
+		{
+			left := c.checkExpr(node.Left, nil)
+			right := c.checkExpr(node.Right, nil)
+			if left.Kind != types.TYPE_INT || right.Kind != types.TYPE_INT {
+				c.handler.ReportError(node.GetPos(), "types must be integers when doing arithmetic")
+			}
+			return left
+		}
 	case *resolver.ExprUnary:
 		{
+			// TODO: i'm not sure this semantic is right for '&'
 			if node.Op == resolver.REFER && expectedType != nil && expectedType.Kind == types.TYPE_PTR {
 				typeResult = expectedType
 			} else if node.Op == resolver.DEREF {
@@ -111,8 +130,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 					c.handler.ReportError(n.GetPos(), "Right hand side of '*' must be a variable")
 				}
 				if !c.isPtrType(node.Type) {
-
-					c.handler.ReportError(node.Pos, "'%s' must be a pointer type", n.Name)
+					c.handler.ReportError(node.Pos, "'%s' type must be a pointer type", node.Type.TypeName)
 				}
 				typeResult = expectedType
 			}
@@ -140,6 +158,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 	if expectedType == nil {
 		return typeResult
 	}
+
 	if typeResult.Kind == expectedType.Kind {
 		return expectedType
 	}

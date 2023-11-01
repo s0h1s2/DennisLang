@@ -20,17 +20,17 @@ const (
 
 type Keyword = map[string]token.TokenKind
 
-var keywords Keyword = Keyword{
-	"if":     token.TK_IF,
-	"let":    token.TK_LET,
-	"fn":     token.TK_FN,
-	"struct": token.TK_STRUCT,
-	"return": token.TK_RETURN,
-	"true":   token.TK_TRUE,
-	"false":  token.TK_FALSE,
-}
+// var keywords Keyword = Keyword{
+// 	"if":     token.TK_IF,
+// 	"let":    token.TK_LET,
+// 	"fn":     token.TK_FN,
+// 	"struct": token.TK_STRUCT,
+// 	"return": token.TK_RETURN,
+// 	"true":   token.TK_TRUE,
+// 	"false":  token.TK_FALSE,
+// }
 
-// var keywords = token.InitKeywords()
+var keywords = token.InitKeywords()
 
 func isKeyword(word string) token.TokenKind {
 	if value, ok := keywords[word]; ok {

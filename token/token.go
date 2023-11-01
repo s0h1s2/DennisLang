@@ -67,6 +67,7 @@ var tokenKindString = [...]string{
 	TK_STRUCT:       "struct",
 	TK_LET:          "let",
 	TK_FN:           "fn",
+	TK_IF:           "if",
 	TK_TRUE:         "true",
 	TK_FALSE:        "false",
 	TK_EOF:          "EOF",

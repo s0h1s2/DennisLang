@@ -110,10 +110,14 @@ func (p *Parser) parsePrimary() ast.Expr {
 }
 func (p *Parser) parseBase() ast.Expr {
 	expr := p.parsePrimary()
-	for p.matchToken(token.TK_DOT) {
-		p.consumeToken()
-		name := p.expectToken(token.TK_IDENT)
-		expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+	for p.matchToken(token.TK_DOT) || p.matchToken(token.TK_OPENBRACE) {
+		if p.matchToken(token.TK_DOT) {
+			p.consumeToken()
+			name := p.expectToken(token.TK_IDENT)
+			expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+		} else if p.matchToken(token.TK_OPENBRACE) {
+
+		}
 	}
 	return expr
 }
@@ -241,24 +245,15 @@ func (p *Parser) parseBaseType() ast.TypeSpec {
 	return nil
 }
 func (p *Parser) parseType() ast.TypeSpec {
-	var left ast.TypeSpec
 	prevToken := p.currentToken()
-	for p.matchToken(token.TK_STAR) {
+	if p.matchToken(token.TK_STAR) {
 		p.consumeToken()
-		left = &ast.TypePtr{Base: left, Pos: prevToken.Pos}
-	}
-	if left != nil {
-		switch t := left.(type) {
-		case *ast.TypePtr:
-			{
-				t.Base = p.parseBaseType()
-			}
-		}
+		left := &ast.TypePtr{Base: p.parseType(), Pos: prevToken.Pos}
+		return left
 	} else {
-		left = p.parseBaseType()
+		return p.parseBaseType()
 	}
 
-	return left
 }
 
 func (p *Parser) parseDeclarations() []ast.Decl {
