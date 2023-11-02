@@ -82,7 +82,7 @@ func (p *Parser) parseCompound(typ ast.TypeSpec) ast.Expr {
 		}
 		p.expectToken(token.TK_COLON)
 		init := p.parseExpression()
-		fields = append(fields, ast.CompoundField{Name: name.Literal, Init: init})
+		fields = append(fields, ast.CompoundField{Name: name.Literal, Init: init, Pos: name.Pos})
 		if !p.matchToken(token.TK_COMMA) {
 			break
 		}
@@ -98,7 +98,8 @@ func (p *Parser) parsePrimary() ast.Expr {
 			ident := p.parseIdent()
 			p.consumeToken()
 			if p.matchToken(token.TK_OPENBRACE) {
-				return p.parseCompound(&ast.TypeName{Name: ident.(*ast.ExprIdent).Name})
+				typeName := ident.(*ast.ExprIdent)
+				return p.parseCompound(&ast.TypeName{Name: typeName.Name, Pos: typeName.Pos})
 			}
 			return ident
 		}
@@ -133,7 +134,8 @@ func (p *Parser) parsePrimary() ast.Expr {
 }
 func (p *Parser) parseBase() ast.Expr {
 	expr := p.parsePrimary()
-	for p.matchToken(token.TK_DOT) || p.matchToken(token.TK_OPENBRACE) {
+	// TODO: maybe parse other things so for now leave that like
+	for p.matchToken(token.TK_DOT) {
 		if p.matchToken(token.TK_DOT) {
 			p.consumeToken()
 			name := p.expectToken(token.TK_IDENT)

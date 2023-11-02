@@ -20,6 +20,7 @@ const (
 	TK_OPENBRACE
 	TK_CLOSEBRACE
 	TK_DOT
+	TK_COMMA
 	TK_BANG
 	TK_EQUAL
 	TK_NOTEQUAL
@@ -55,6 +56,7 @@ var tokenKindString = [...]string{
 	TK_AND:          "&",
 	TK_BANG:         "!",
 	TK_DOT:          ".",
+	TK_COMMA:        ",",
 	TK_LESSTHAN:     "<",
 	TK_GREATERTHAN:  ">",
 	TK_GREATEREQUAL: ">=",

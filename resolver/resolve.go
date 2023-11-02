@@ -164,19 +164,51 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 	return nil
 }
 
-func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) ExprNode {
+func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) ExprNode {
 	pos := expr.GetPos()
 	switch node := expr.(type) {
 	case *ast.ExprBinary:
 		{
-			left := resolveExpr(node.Left, scope, nil)
-			right := resolveExpr(node.Right, scope, nil)
+			left := resolveExpr(node.Left, currScope, nil)
+			right := resolveExpr(node.Right, currScope, nil)
 			return &ExprBinary{Left: left, Right: right, Op: KindToBinary[node.Op]}
+		}
+	case *ast.ExprCompound:
+		{
+			typ, ok := isTypeExist(node.Type)
+			if !ok {
+				return nil
+			}
+			// Type must not be a pointer or primitive  e.g '*Vector{}','i32'
+			if typ.Kind != types.TYPE_STRUCT /* || union*/ {
+				handler.ReportError(node.Pos, "Type must be a struct or union in order to compose")
+				return nil
+			}
+			structScope := table.Symbols.GetObj(typ.TypeName).Scope
+			fieldsName := structScope.QueryByKind(scope.FIELD)
+			resolvedFieldsName := map[string]bool{}
+			resolvedFields := make([]ExprCompoundField, 0, 4)
+			for _, field := range node.Fields {
+				if !structScope.LookupOnce(field.Name) {
+					handler.ReportError(field.Pos, "'%s' doesn't have '%s' field", typ.TypeName, field.Name)
+					continue
+				}
+				resolvedFieldsName[field.Name] = true
+				resolvedExpr := resolveExpr(field.Init, currScope, nil)
+				resolvedFields = append(resolvedFields, ExprCompoundField{Name: field.Name, Expr: resolvedExpr})
+			}
+			for _, fieldName := range fieldsName {
+				_, ok := resolvedFieldsName[fieldName]
+				if !ok {
+					handler.ReportError(node.Pos, "Field '%s' must be initialized in '%s' Compound", fieldName, typ.TypeName)
+				}
+			}
+			return &ExprCompound{Type: typ}
 		}
 	case *ast.ExprAssign:
 		{
-			left := resolveExpr(node.Left, scope, nil)
-			right := resolveExpr(node.Right, scope, nil)
+			left := resolveExpr(node.Left, currScope, nil)
+			right := resolveExpr(node.Right, currScope, nil)
 			return &ExprAssign{Right: right, Left: left}
 		}
 	case *ast.ExprInt:
@@ -189,14 +221,14 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 		}
 	case *ast.ExprUnary:
 		{
-			resolved := resolveExpr(node.Right, scope, nil)
+			resolved := resolveExpr(node.Right, currScope, nil)
 			if resolved != nil {
 				return &ExprUnary{Type: resolved.GetType(), Right: resolved, Op: KindToUnary[node.Op]}
 			}
 		}
 	case *ast.ExprField:
 		{
-			left := resolveExpr(node.Expr, scope, nil)
+			left := resolveExpr(node.Expr, currScope, nil)
 			if left != nil {
 				typ := left.GetType()
 				if typ.Kind == types.TYPE_PTR {
@@ -219,11 +251,11 @@ func resolveExpr(expr ast.Expr, scope *scope.Scope, typeScope *scope.Scope) Expr
 
 	case *ast.ExprIdent:
 		{
-			if !scope.Lookup(node.Name) {
+			if !currScope.Lookup(node.Name) {
 				handler.ReportError(pos, "Variable '%s' not found", node.Name)
 				return nil
 			}
-			return &ExprIdentifier{Name: node.Name, Type: scope.GetObj(node.Name).Type}
+			return &ExprIdentifier{Name: node.Name, Type: currScope.GetObj(node.Name).Type}
 		}
 	default:
 		{

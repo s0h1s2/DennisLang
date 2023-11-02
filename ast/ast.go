@@ -78,6 +78,16 @@ type ExprAssign struct {
 	Left  Expr
 	Right Expr
 }
+type CompoundField struct {
+	Name string
+	Init Expr
+	Pos  error.Position
+}
+type ExprCompound struct {
+	Pos    error.Position
+	Type   TypeSpec
+	Fields []CompoundField
+}
 
 type ExprField struct {
 	Pos  error.Position
@@ -141,7 +151,10 @@ func (e *ExprBinary) exprNode() {}
 func (e *ExprBinary) GetPos() error.Position {
 	return e.Pos
 }
-
+func (e ExprCompound) exprNode() {}
+func (e ExprCompound) GetPos() error.Position {
+	return e.Pos
+}
 func (e *ExprIdent) exprNode() {}
 func (e *ExprIdent) GetPos() error.Position {
 	return e.Pos
