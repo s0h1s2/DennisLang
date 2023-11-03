@@ -200,10 +200,10 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 			for _, fieldName := range fieldsName {
 				_, ok := resolvedFieldsName[fieldName]
 				if !ok {
-					handler.ReportError(node.Pos, "Field '%s' must be initialized in '%s' Compound", fieldName, typ.TypeName)
+					handler.ReportError(node.Pos, "Field '%s' must be initialized in '%s' struct Compound", fieldName, typ.TypeName)
 				}
 			}
-			return &ExprCompound{Type: typ}
+			return &ExprCompound{Type: typ, Fields: resolvedFields, Pos: node.Pos}
 		}
 	case *ast.ExprAssign:
 		{

@@ -118,6 +118,17 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 			}
 			return left
 		}
+	case *resolver.ExprCompound:
+		{
+			for _, field := range node.Fields {
+				fieldType := c.symTable.Symbols.GetObj(node.Type.TypeName).Scope.GetObj(field.Name).Type
+				checkedField := c.checkExpr(field.Expr, fieldType)
+				if !c.areTypesEqual(fieldType, checkedField) {
+					c.handler.ReportError(node.Pos, "Expcted '%s' type but got '%s' type in struct compound", fieldType.TypeName, checkedField.TypeName)
+				}
+			}
+			return node.Type
+		}
 	case *resolver.ExprUnary:
 		{
 			// TODO: i'm not sure this semantic is right for '&'
