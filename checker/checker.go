@@ -76,7 +76,7 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 		}
 	case *resolver.StmtExpr:
 		{
-			c.checkExpr(node.Expr, nil)
+			return c.checkExpr(node.Expr, nil)
 		}
 
 	case *resolver.StmtLet:
@@ -86,6 +86,7 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 				if !c.areTypesEqual(node.Type, exprType) {
 					c.handler.ReportError(node.GetPos(), "Expected '%s' type but got '%s' type", node.Type.TypeName, exprType.TypeName)
 				}
+				return exprType
 			}
 		}
 	}

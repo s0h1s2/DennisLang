@@ -7,11 +7,12 @@ import (
 )
 
 type Parser struct {
-	tokens     []token.Token
-	bag        *error.DiagnosticBag
-	tokenIndex int
-	inRHS      bool
-	hadError   bool
+	tokens        []token.Token
+	bag           *error.DiagnosticBag
+	tokenIndex    int
+	inRHS         bool
+	hadError      bool
+	isFlowControl bool
 }
 
 func (p *Parser) peekToken() *token.Token {
@@ -49,10 +50,11 @@ func (p *Parser) atEnd() bool {
 }
 func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 	return &Parser{
-		tokens:     tokens,
-		bag:        bag,
-		tokenIndex: 0,
-		hadError:   false,
+		tokens:        tokens,
+		bag:           bag,
+		tokenIndex:    0,
+		hadError:      false,
+		isFlowControl: false,
 	}
 }
 func (p *Parser) reportHere(format string, args ...interface{}) {
@@ -97,7 +99,7 @@ func (p *Parser) parsePrimary() ast.Expr {
 		{
 			ident := p.parseIdent()
 			p.consumeToken()
-			if p.matchToken(token.TK_OPENBRACE) {
+			if p.matchToken(token.TK_OPENBRACE) && !p.isFlowControl {
 				typeName := ident.(*ast.ExprIdent)
 				return p.parseCompound(&ast.TypeName{Name: typeName.Name, Pos: typeName.Pos})
 			}
@@ -217,9 +219,13 @@ func (p *Parser) parseReturn() ast.Stmt {
 	return &ast.StmtReturn{Pos: ret.Pos, Result: expr}
 }
 func (p *Parser) parseIf() ast.Stmt {
+	p.expectToken(token.TK_IF)
 	pos := p.currentToken().Pos
+	p.isFlowControl = true
 	cond := p.parseExpression()
+	p.isFlowControl = false
 	then := p.parseBlock()
+
 	return &ast.StmtIf{
 		Cond: cond,
 		Then: then,
@@ -246,7 +252,6 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			}
 		case token.TK_IF:
 			{
-				p.consumeToken()
 				stmts = append(stmts, p.parseIf())
 			}
 		default:
