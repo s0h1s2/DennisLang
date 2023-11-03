@@ -31,7 +31,15 @@ func (s *Scope) LookupOnce(name string) bool {
 func (s *Scope) Define(name string, obj *Object) {
 	s.symbols[name] = obj
 }
-
+func (s *Scope) QueryByKind(kind ObjectKind) []string {
+	objects := make([]string, 0, 4)
+	for k, v := range s.symbols {
+		if v.Kind == kind {
+			objects = append(objects, k)
+		}
+	}
+	return objects
+}
 func (s *Scope) GetObj(name string) *Object {
 	scope := s
 	for scope != nil {

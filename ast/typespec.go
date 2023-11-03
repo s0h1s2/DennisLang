@@ -1,4 +1,4 @@
-package types
+package ast
 
 import "github.com/s0h1s2/error"
 

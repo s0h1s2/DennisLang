@@ -4,7 +4,6 @@ import (
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/token"
-	"github.com/s0h1s2/types"
 )
 
 type Node interface {
@@ -22,14 +21,14 @@ type Decl interface {
 type DeclFunction struct {
 	Pos     error.Position
 	Name    string
-	RetType types.TypeSpec
+	RetType TypeSpec
 	Body    *StmtBlock
 	End     error.Position
 }
 type Field struct {
 	Pos  error.Position
 	Name string
-	Type types.TypeSpec
+	Type TypeSpec
 }
 type DeclStruct struct {
 	Pos    error.Position
@@ -48,7 +47,7 @@ type StmtBlock struct {
 type StmtLet struct {
 	Pos  error.Position
 	Name string
-	Type types.TypeSpec
+	Type TypeSpec
 	Init Expr
 }
 type StmtIf struct {
@@ -79,11 +78,17 @@ type ExprAssign struct {
 	Left  Expr
 	Right Expr
 }
-type ExprGet struct {
-	Pos   error.Position
-	Right Expr
-	Name  *ExprField
+type CompoundField struct {
+	Name string
+	Init Expr
+	Pos  error.Position
 }
+type ExprCompound struct {
+	Pos    error.Position
+	Type   TypeSpec
+	Fields []CompoundField
+}
+
 type ExprField struct {
 	Pos  error.Position
 	Name string
@@ -146,7 +151,10 @@ func (e *ExprBinary) exprNode() {}
 func (e *ExprBinary) GetPos() error.Position {
 	return e.Pos
 }
-
+func (e ExprCompound) exprNode() {}
+func (e ExprCompound) GetPos() error.Position {
+	return e.Pos
+}
 func (e *ExprIdent) exprNode() {}
 func (e *ExprIdent) GetPos() error.Position {
 	return e.Pos
@@ -156,15 +164,11 @@ func (e *ExprUnary) exprNode() {}
 func (e *ExprUnary) GetPos() error.Position {
 	return e.Pos
 }
+
 func (e *ExprAssign) exprNode() {}
 func (e *ExprAssign) GetPos() error.Position {
 	return e.Pos
 }
-func (e *ExprGet) exprNode() {}
-func (e *ExprGet) GetPos() error.Position {
-	return e.Pos
-}
-
 func (e *ExprField) exprNode() {}
 func (e *ExprField) GetPos() error.Position {
 	return e.Pos

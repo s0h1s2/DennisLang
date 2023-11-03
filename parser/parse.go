@@ -4,15 +4,15 @@ import (
 	"github.com/s0h1s2/ast"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
-	"github.com/s0h1s2/types"
 )
 
 type Parser struct {
-	tokens     []token.Token
-	bag        *error.DiagnosticBag
-	tokenIndex int
-	inRHS      bool
-	hadError   bool
+	tokens        []token.Token
+	bag           *error.DiagnosticBag
+	tokenIndex    int
+	inRHS         bool
+	hadError      bool
+	isFlowControl bool
 }
 
 func (p *Parser) peekToken() *token.Token {
@@ -50,10 +50,11 @@ func (p *Parser) atEnd() bool {
 }
 func New(tokens []token.Token, bag *error.DiagnosticBag) *Parser {
 	return &Parser{
-		tokens:     tokens,
-		bag:        bag,
-		tokenIndex: 0,
-		hadError:   false,
+		tokens:        tokens,
+		bag:           bag,
+		tokenIndex:    0,
+		hadError:      false,
+		isFlowControl: false,
 	}
 }
 func (p *Parser) reportHere(format string, args ...interface{}) {
@@ -72,12 +73,36 @@ func (p *Parser) parseBoolean() ast.Expr {
 	}
 	return &ast.ExprBoolean{Value: val}
 }
+func (p *Parser) parseCompound(typ ast.TypeSpec) ast.Expr {
+	tk := p.expectToken(token.TK_OPENBRACE)
+	fields := make([]ast.CompoundField, 0, 4)
+	for !p.matchToken(token.TK_CLOSEBRACE) {
+		name := p.expectToken(token.TK_IDENT)
+		if name == nil {
+			p.reportHere("Expected field name in compound initialization")
+			return nil
+		}
+		p.expectToken(token.TK_COLON)
+		init := p.parseExpression()
+		fields = append(fields, ast.CompoundField{Name: name.Literal, Init: init, Pos: name.Pos})
+		if !p.matchToken(token.TK_COMMA) {
+			break
+		}
+		p.consumeToken()
+	}
+	p.expectToken(token.TK_CLOSEBRACE)
+	return &ast.ExprCompound{Type: typ, Fields: fields, Pos: tk.Pos}
+}
 func (p *Parser) parsePrimary() ast.Expr {
 	switch p.currentToken().Kind {
 	case token.TK_IDENT:
 		{
 			ident := p.parseIdent()
 			p.consumeToken()
+			if p.matchToken(token.TK_OPENBRACE) && !p.isFlowControl {
+				typeName := ident.(*ast.ExprIdent)
+				return p.parseCompound(&ast.TypeName{Name: typeName.Name, Pos: typeName.Pos})
+			}
 			return ident
 		}
 	case token.TK_INTEGER:
@@ -111,10 +136,13 @@ func (p *Parser) parsePrimary() ast.Expr {
 }
 func (p *Parser) parseBase() ast.Expr {
 	expr := p.parsePrimary()
+	// TODO: maybe parse other things so for now leave that like
 	for p.matchToken(token.TK_DOT) {
-		p.consumeToken()
-		name := p.expectToken(token.TK_IDENT)
-		expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+		if p.matchToken(token.TK_DOT) {
+			p.consumeToken()
+			name := p.expectToken(token.TK_IDENT)
+			expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+		}
 	}
 	return expr
 }
@@ -191,9 +219,13 @@ func (p *Parser) parseReturn() ast.Stmt {
 	return &ast.StmtReturn{Pos: ret.Pos, Result: expr}
 }
 func (p *Parser) parseIf() ast.Stmt {
+	p.expectToken(token.TK_IF)
 	pos := p.currentToken().Pos
+	p.isFlowControl = true
 	cond := p.parseExpression()
+	p.isFlowControl = false
 	then := p.parseBlock()
+
 	return &ast.StmtIf{
 		Cond: cond,
 		Then: then,
@@ -220,7 +252,6 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			}
 		case token.TK_IF:
 			{
-				p.consumeToken()
 				stmts = append(stmts, p.parseIf())
 			}
 		default:
@@ -233,33 +264,24 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 	p.expectToken(token.TK_CLOSEBRACE)
 	return &ast.StmtBlock{Block: stmts}
 }
-func (p *Parser) parseBaseType() types.TypeSpec {
+func (p *Parser) parseBaseType() ast.TypeSpec {
 	if p.matchToken(token.TK_IDENT) {
 		name := p.expectToken(token.TK_IDENT)
-		return &types.TypeName{Name: name.Literal, Pos: name.Pos}
+		return &ast.TypeName{Name: name.Literal, Pos: name.Pos}
 	}
 	p.reportHere("Expected type but got '%s'", p.currentToken().Kind.String())
 	return nil
 }
-func (p *Parser) parseType() types.TypeSpec {
-	var left types.TypeSpec
+func (p *Parser) parseType() ast.TypeSpec {
 	prevToken := p.currentToken()
-	for p.matchToken(token.TK_STAR) {
+	if p.matchToken(token.TK_STAR) {
 		p.consumeToken()
-		left = &types.TypePtr{Base: left, Pos: prevToken.Pos}
-	}
-	if left != nil {
-		switch t := left.(type) {
-		case *types.TypePtr:
-			{
-				t.Base = p.parseBaseType()
-			}
-		}
+		left := &ast.TypePtr{Base: p.parseType(), Pos: prevToken.Pos}
+		return left
 	} else {
-		left = p.parseBaseType()
+		return p.parseBaseType()
 	}
 
-	return left
 }
 
 func (p *Parser) parseDeclarations() []ast.Decl {
