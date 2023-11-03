@@ -38,6 +38,9 @@ func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) 
 	for _, decl := range program {
 		decls = append(decls, resolveDecl(decl))
 	}
+	if !table.Symbols.Lookup("main") {
+		handler.ReportError(error.Position{}, "'main' function couldn't be found")
+	}
 	return table, decls
 }
 func isTypeExist(typee ast.TypeSpec) (*types.Type, bool) {

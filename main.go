@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/s0h1s2/ast"
+	"github.com/s0h1s2/backend/c"
 	"github.com/s0h1s2/checker"
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/lexer"
@@ -92,5 +93,11 @@ func main() {
 		bag.PrintErrors()
 		return
 	}
-
+	f, err := os.Create("output.c")
+	if err != nil {
+		println("Unable to write to file ")
+		return
+	}
+	generator := c.New(f, resolvedDecls)
+	generator.GenerateCode()
 }
