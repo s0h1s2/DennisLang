@@ -344,9 +344,28 @@ func (p *Parser) parseStruct() ast.Decl {
 		Pos:    name.Pos,
 	}
 }
+
+func (p *Parser) parseFunctionParameters() []ast.Field {
+	params := make([]ast.Field, 0)
+	for !p.atEnd() && !p.matchToken(token.TK_CLOSEPARAN) {
+		name := p.expectToken(token.TK_IDENT)
+		if name == nil {
+			return nil
+		}
+		p.expectToken(token.TK_COLON)
+		typeSpec := p.parseType()
+		params = append(params, ast.Field{Name: name.Literal, Type: typeSpec})
+		if !p.matchToken(token.TK_COMMA) {
+			break
+		}
+		p.consumeToken()
+	}
+	return params
+}
 func (p *Parser) parseFunction() *ast.DeclFunction {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_OPENPARAN)
+	params := p.parseFunctionParameters()
 	p.expectToken(token.TK_CLOSEPARAN)
 	p.expectToken(token.TK_COLON)
 	typeResult := p.parseType()
@@ -354,7 +373,7 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	if p.hasError() {
 		return nil
 	}
-	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}
+	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, Parameters: params, End: p.currentToken().Pos}
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")

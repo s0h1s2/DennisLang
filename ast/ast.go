@@ -19,11 +19,12 @@ type Decl interface {
 	declNode()
 }
 type DeclFunction struct {
-	Pos     error.Position
-	Name    string
-	RetType TypeSpec
-	Body    *StmtBlock
-	End     error.Position
+	Pos        error.Position
+	Name       string
+	Parameters []Field
+	RetType    TypeSpec
+	Body       *StmtBlock
+	End        error.Position
 }
 type Field struct {
 	Pos  error.Position

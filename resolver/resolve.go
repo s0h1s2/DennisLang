@@ -83,9 +83,22 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			if !ok {
 				return nil
 			}
+			fnScope := scope.NewScope(nil)
 			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
-			resolvedBody := resolveStmt(node.Body, nil)
-			return &DeclFunction{Scope: resolvedBody.GetScope(), Name: node.Name, Body: resolvedBody, ReturnType: typ}
+			for _, param := range node.Parameters {
+				if !fnScope.LookupOnce(param.Name) {
+					typ, ok = isTypeExist(param.Type)
+					if !ok {
+						return nil
+					}
+					fnScope.Define(param.Name, scope.NewObj(scope.VAR, typ))
+				} else {
+					handler.ReportError(node.Pos, "Can't redeclare '%s' parameter more than once", param.Name)
+					return nil
+				}
+			}
+			resolvedBody := resolveStmt(node.Body, fnScope)
+			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: typ}
 		}
 	case *ast.DeclStruct:
 		{
