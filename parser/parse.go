@@ -136,12 +136,29 @@ func (p *Parser) parsePrimary() ast.Expr {
 }
 func (p *Parser) parseBase() ast.Expr {
 	expr := p.parsePrimary()
-	// TODO: maybe parse other things so for now leave that like
-	for p.matchToken(token.TK_DOT) {
+	for p.matchToken(token.TK_OPENPARAN) || p.matchToken(token.TK_DOT) {
 		if p.matchToken(token.TK_DOT) {
 			p.consumeToken()
 			name := p.expectToken(token.TK_IDENT)
 			expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+		} else if p.matchToken(token.TK_OPENPARAN) {
+			paranPos := p.expectToken(token.TK_OPENPARAN)
+			// parse function arguments
+			args := make([]ast.Expr, 0)
+			for !p.matchToken(token.TK_CLOSEPARAN) {
+				args = append(args, p.parseExpression())
+				if !p.matchToken(token.TK_COMMA) {
+					break
+				}
+				p.consumeToken()
+			}
+			p.expectToken(token.TK_CLOSEPARAN)
+			name, ok := expr.(*ast.ExprIdent)
+			if !ok {
+				p.reportHere("Function call must be a name")
+				return nil
+			}
+			expr = &ast.ExprCall{Pos: paranPos.Pos, Args: args, Name: name.Name}
 		}
 	}
 	return expr

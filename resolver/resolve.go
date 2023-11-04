@@ -91,12 +91,13 @@ func resolveDecl(decl ast.Decl) DeclNode {
 					if !ok {
 						return nil
 					}
-					fnScope.Define(param.Name, scope.NewObj(scope.VAR, typ))
+					fnScope.Define(param.Name, scope.NewObj(scope.PARAM, typ))
 				} else {
 					handler.ReportError(node.Pos, "Can't redeclare '%s' parameter more than once", param.Name)
 					return nil
 				}
 			}
+			table.Symbols.GetObj(node.Name).Scope = fnScope
 			resolvedBody := resolveStmt(node.Body, fnScope)
 			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: typ}
 		}
@@ -217,6 +218,27 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 				}
 			}
 			return &ExprCompound{Type: typ, Fields: resolvedFields, Pos: node.Pos}
+		}
+	case *ast.ExprCall:
+		{
+			if !table.Symbols.LookupOnce(node.Name) {
+				handler.ReportError(node.Pos, "Function '%s' not found", node.Name)
+				return nil
+			}
+			fnObj := table.Symbols.GetObj(node.Name)
+			params := fnObj.Scope.QueryByKind(scope.PARAM)
+			args := make([]*ExprArg, 0)
+			for _, arg := range node.Args {
+				resolved := resolveExpr(arg, currScope, nil)
+				args = append(args, &ExprArg{Expr: resolved})
+			}
+			paramLen := len(params)
+			argsLen := len(args)
+			if paramLen != argsLen {
+				handler.ReportError(node.Pos, "Function '%s' expected '%d' arguments but got '%d' arguments", node.Name, paramLen, argsLen)
+				return nil
+			}
+			return &ExprCall{Name: node.Name, Args: args, Pos: node.Pos}
 		}
 	case *ast.ExprAssign:
 		{
