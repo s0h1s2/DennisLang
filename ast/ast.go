@@ -112,6 +112,9 @@ type ExprBoolean struct {
 	Pos   error.Position
 	Value bool
 }
+type ExprNull struct {
+	Pos error.Position
+}
 
 func (e *DeclFunction) declNode() {}
 func (e *DeclFunction) GetPos() error.Position {
@@ -142,21 +145,12 @@ func (s *StmtExpr) stmtNode() {}
 func (s *StmtExpr) GetPos() error.Position {
 	return s.Pos
 }
-func (e *ExprInt) exprNode() {}
-func (e *ExprInt) GetPos() error.Position {
-	return e.Pos
-}
-
 func (e *ExprBinary) exprNode() {}
 func (e *ExprBinary) GetPos() error.Position {
 	return e.Pos
 }
 func (e ExprCompound) exprNode() {}
 func (e ExprCompound) GetPos() error.Position {
-	return e.Pos
-}
-func (e *ExprIdent) exprNode() {}
-func (e *ExprIdent) GetPos() error.Position {
 	return e.Pos
 }
 
@@ -174,7 +168,20 @@ func (e *ExprField) GetPos() error.Position {
 	return e.Pos
 }
 
+func (e *ExprIdent) exprNode() {}
+func (e *ExprIdent) GetPos() error.Position {
+	return e.Pos
+}
+
 func (e *ExprBoolean) exprNode() {}
 func (e *ExprBoolean) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprInt) exprNode() {}
+func (e *ExprInt) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprNull) exprNode() {}
+func (e *ExprNull) GetPos() error.Position {
 	return e.Pos
 }

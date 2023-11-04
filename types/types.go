@@ -7,6 +7,7 @@ type TypeKind int
 const (
 	TYPE_INT TypeKind = iota
 	TYPE_VOID
+	TYPE_NULL
 	TYPE_BOOL
 	TYPE_PTR
 	TYPE_STRUCT

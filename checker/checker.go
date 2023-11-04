@@ -26,6 +26,7 @@ func (c *checker) areTypesEqual(type1 *types.Type, type2 *types.Type) bool {
 	if type1 == nil || type2 == nil {
 		return false
 	}
+
 	if type1.TypeId == type2.TypeId {
 		return true
 	}
@@ -83,10 +84,18 @@ func (c *checker) checkStmt(stmt resolver.StmtNode) *types.Type {
 		{
 			if node.Init != nil {
 				exprType := c.checkExpr(node.Init, node.Type)
+				if exprType.Kind == types.TYPE_NULL {
+					if node.Type.Kind == types.TYPE_PTR {
+						return exprType
+					}
+					c.handler.ReportError(node.GetPos(), "null can be assigned to pointer types only")
+					return nil
+				}
 				if !c.areTypesEqual(node.Type, exprType) {
 					c.handler.ReportError(node.GetPos(), "Expected '%s' type but got '%s' type", node.Type.TypeName, exprType.TypeName)
 				}
 				return exprType
+
 			}
 		}
 	}
@@ -100,6 +109,12 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		{
 			left := c.checkExpr(node.Left, expectedType)
 			right := c.checkExpr(node.Right, left)
+			if right.Kind == types.TYPE_NULL {
+				if left.Kind != types.TYPE_PTR {
+					c.handler.ReportError(node.GetPos(), "null only assignable to pointer types.")
+					return nil
+				}
+			}
 			if !c.areTypesEqual(left, right) {
 				c.handler.ReportError(node.GetPos(), "Expected '%s' but got '%s'", left.TypeName, right.TypeName)
 				return nil
@@ -158,6 +173,10 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 	case *resolver.ExprIdentifier:
 		{
 			typeResult = node.Type
+		}
+	case *resolver.ExprNull:
+		{
+			typeResult = c.symTable.Symbols.GetObj("null").Type
 		}
 	default:
 		{

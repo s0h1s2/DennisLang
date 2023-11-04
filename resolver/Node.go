@@ -134,6 +134,10 @@ type ExprIdentifier struct {
 	Name string
 	Type *types.Type
 }
+type ExprNull struct {
+	Pos  error.Position
+	Type *types.Type
+}
 
 func (d *DeclFunction) declNode() {}
 func (d *DeclFunction) GetType() *types.Type {
@@ -285,5 +289,15 @@ func (e *ExprBool) GetPos() error.Position {
 	return error.Position{}
 }
 func (e *ExprBool) GetScope() *scope.Scope {
+	return nil
+}
+func (e *ExprNull) exprNode() {}
+func (e *ExprNull) GetType() *types.Type {
+	return nil
+}
+func (e *ExprNull) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprNull) GetScope() *scope.Scope {
 	return nil
 }

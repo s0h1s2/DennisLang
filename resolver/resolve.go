@@ -28,6 +28,7 @@ func InitTable() *Table {
 	t.Symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
 	t.Symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
 	t.Symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
+	t.Symbols.Define("null", scope.NewTypeObj(types.NewType("null", types.TYPE_NULL, 0, 0)))
 	return &t
 }
 func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) {
@@ -211,21 +212,6 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 			right := resolveExpr(node.Right, currScope, nil)
 			return &ExprAssign{Right: right, Left: left}
 		}
-	case *ast.ExprInt:
-		{
-			return &ExprInt{Value: node.Value}
-		}
-	case *ast.ExprBoolean:
-		{
-			return &ExprBool{Value: "1"}
-		}
-	case *ast.ExprUnary:
-		{
-			resolved := resolveExpr(node.Right, currScope, nil)
-			if resolved != nil {
-				return &ExprUnary{Type: resolved.GetType(), Right: resolved, Op: KindToUnary[node.Op]}
-			}
-		}
 	case *ast.ExprField:
 		{
 			left := resolveExpr(node.Expr, currScope, nil)
@@ -249,6 +235,21 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 			return left
 		}
 
+	case *ast.ExprInt:
+		{
+			return &ExprInt{Value: node.Value}
+		}
+	case *ast.ExprBoolean:
+		{
+			return &ExprBool{Value: "1"}
+		}
+	case *ast.ExprUnary:
+		{
+			resolved := resolveExpr(node.Right, currScope, nil)
+			if resolved != nil {
+				return &ExprUnary{Type: resolved.GetType(), Right: resolved, Op: KindToUnary[node.Op]}
+			}
+		}
 	case *ast.ExprIdent:
 		{
 			if !currScope.Lookup(node.Name) {
@@ -256,6 +257,10 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 				return nil
 			}
 			return &ExprIdentifier{Name: node.Name, Type: currScope.GetObj(node.Name).Type}
+		}
+	case *ast.ExprNull:
+		{
+			return &ExprNull{}
 		}
 	default:
 		{

@@ -94,6 +94,8 @@ func (p *Parser) parseCompound(typ ast.TypeSpec) ast.Expr {
 	return &ast.ExprCompound{Type: typ, Fields: fields, Pos: tk.Pos}
 }
 func (p *Parser) parsePrimary() ast.Expr {
+
+	pos := p.currentToken().Pos
 	switch p.currentToken().Kind {
 	case token.TK_IDENT:
 		{
@@ -125,6 +127,11 @@ func (p *Parser) parsePrimary() ast.Expr {
 			expr := p.parseExpression()
 			p.expectToken(token.TK_CLOSEPARAN)
 			return expr
+		}
+	case token.TK_NULL:
+		{
+			p.consumeToken()
+			return &ast.ExprNull{Pos: pos}
 		}
 	default:
 		{

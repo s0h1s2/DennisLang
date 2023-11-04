@@ -36,6 +36,7 @@ const (
 	TK_IF
 	TK_TRUE
 	TK_FALSE
+	TK_NULL
 	TK_RETURN
 	keywords_end
 
@@ -72,6 +73,7 @@ var tokenKindString = [...]string{
 	TK_IF:           "if",
 	TK_TRUE:         "true",
 	TK_FALSE:        "false",
+	TK_NULL:         "null",
 	TK_EOF:          "EOF",
 }
 
