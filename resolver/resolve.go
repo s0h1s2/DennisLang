@@ -28,6 +28,7 @@ func InitTable() *Table {
 	t.Symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
 	t.Symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
 	t.Symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
+	t.Symbols.Define("string", scope.NewTypeObj(types.NewType("string", types.TYPE_STRING, 0, 0)))
 	return &t
 }
 func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) {
@@ -217,8 +218,13 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 		}
 	case *ast.ExprBoolean:
 		{
-			return &ExprBool{Value: "1"}
+			return &ExprBool{Value: node.Value}
 		}
+	case *ast.ExprString:
+		{
+			return &ExprString{Value: node.Value}
+		}
+
 	case *ast.ExprUnary:
 		{
 			resolved := resolveExpr(node.Right, currScope, nil)

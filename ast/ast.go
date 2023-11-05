@@ -108,6 +108,11 @@ type ExprInt struct {
 	Pos   error.Position
 	Value string
 }
+type ExprString struct {
+	Pos   error.Position
+	Value string
+}
+
 type ExprBoolean struct {
 	Pos   error.Position
 	Value bool
@@ -176,5 +181,9 @@ func (e *ExprField) GetPos() error.Position {
 
 func (e *ExprBoolean) exprNode() {}
 func (e *ExprBoolean) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprString) exprNode() {}
+func (e *ExprString) GetPos() error.Position {
 	return e.Pos
 }

@@ -119,6 +119,13 @@ func (p *Parser) parsePrimary() ast.Expr {
 			p.consumeToken()
 			return boolean
 		}
+	case token.TK_STRING:
+		{
+			tk := p.currentToken()
+			str := &ast.ExprString{Value: tk.Literal, Pos: tk.Pos}
+			p.consumeToken()
+			return str
+		}
 	case token.TK_OPENPARAN:
 		{
 			p.consumeToken()
@@ -265,8 +272,8 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 	return &ast.StmtBlock{Block: stmts}
 }
 func (p *Parser) parseBaseType() ast.TypeSpec {
-	if p.matchToken(token.TK_IDENT) {
-		name := p.expectToken(token.TK_IDENT)
+	if p.matchToken(token.TK_IDENT) || p.matchToken(token.TK_STRING) {
+		name := p.expectToken(p.currentToken().Kind)
 		return &ast.TypeName{Name: name.Literal, Pos: name.Pos}
 	}
 	p.reportHere("Expected type but got '%s'", p.currentToken().Kind.String())
