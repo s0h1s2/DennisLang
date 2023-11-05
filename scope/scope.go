@@ -40,6 +40,16 @@ func (s *Scope) QueryByKind(kind ObjectKind) []string {
 	}
 	return objects
 }
+func (s *Scope) QueryObjByKind(kind ObjectKind) []*Object {
+	objects := make([]*Object, 0, 4)
+	for _, v := range s.symbols {
+		if v.Kind == kind {
+			objects = append(objects, v)
+		}
+	}
+	return objects
+}
+
 func (s *Scope) GetObj(name string) *Object {
 	scope := s
 	for scope != nil {
