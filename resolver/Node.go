@@ -139,6 +139,9 @@ type ExprInt struct {
 type ExprBool struct {
 	Value bool
 }
+type ExprString struct {
+	Value string
+}
 
 type ExprIdentifier struct {
 	Name string
@@ -315,5 +318,15 @@ func (e *ExprBool) GetPos() error.Position {
 	return error.Position{}
 }
 func (e *ExprBool) GetScope() *scope.Scope {
+	return nil
+}
+func (e *ExprString) exprNode() {}
+func (e *ExprString) GetType() *types.Type {
+	return nil
+}
+func (e *ExprString) GetPos() error.Position {
+	return error.Position{}
+}
+func (e *ExprString) GetScope() *scope.Scope {
 	return nil
 }

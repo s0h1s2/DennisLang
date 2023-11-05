@@ -172,6 +172,10 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		{
 			typeResult = c.symTable.Symbols.GetObj("bool").Type
 		}
+	case *resolver.ExprString:
+		{
+			typeResult = c.symTable.Symbols.GetObj("string").Type
+		}
 	case *resolver.ExprIdentifier:
 		{
 			typeResult = node.Type
