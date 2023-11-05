@@ -79,15 +79,15 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				handler.ReportError(node.Pos, "Can't redeclare function '%s' more than once", node.Name)
 				return nil
 			}
-			typ, ok := isTypeExist(node.RetType)
+			retType, ok := isTypeExist(node.RetType)
 			if !ok {
 				return nil
 			}
 			fnScope := scope.NewScope(nil)
-			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
+			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, retType))
 			for _, param := range node.Parameters {
 				if !fnScope.LookupOnce(param.Name) {
-					typ, ok = isTypeExist(param.Type)
+					typ, ok := isTypeExist(param.Type)
 					if !ok {
 						return nil
 					}
@@ -99,7 +99,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 			}
 			table.Symbols.GetObj(node.Name).Scope = fnScope
 			resolvedBody := resolveStmt(node.Body, fnScope)
-			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: typ}
+			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: retType}
 		}
 	case *ast.DeclStruct:
 		{
@@ -252,7 +252,7 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 		}
 	case *ast.ExprBoolean:
 		{
-			return &ExprBool{Value: "1"}
+			return &ExprBool{Value: node.Value}
 		}
 	case *ast.ExprUnary:
 		{

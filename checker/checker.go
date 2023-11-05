@@ -133,7 +133,8 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprCall:
 		{
-			params := c.symTable.Symbols.GetObj(node.Name).Scope.QueryObjByKind(scope.PARAM)
+			fnObj := c.symTable.Symbols.GetObj(node.Name)
+			params := fnObj.Scope.QueryObjByKind(scope.PARAM)
 			for i, arg := range node.Args {
 				argType := c.checkExpr(arg.Expr, params[i].Type)
 				if !c.areTypesEqual(params[i].Type, argType) {
@@ -141,6 +142,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 					return nil
 				}
 			}
+			return fnObj.Type
 		}
 	case *resolver.ExprUnary:
 		{
@@ -161,7 +163,6 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprArg:
 		{
-
 		}
 	case *resolver.ExprInt:
 		{

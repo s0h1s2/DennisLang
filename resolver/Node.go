@@ -137,7 +137,7 @@ type ExprInt struct {
 	Value string
 }
 type ExprBool struct {
-	Value string
+	Value bool
 }
 
 type ExprIdentifier struct {
