@@ -19,11 +19,12 @@ type Decl interface {
 	declNode()
 }
 type DeclFunction struct {
-	Pos     error.Position
-	Name    string
-	RetType TypeSpec
-	Body    *StmtBlock
-	End     error.Position
+	Pos        error.Position
+	Name       string
+	Parameters []Field
+	RetType    TypeSpec
+	Body       *StmtBlock
+	End        error.Position
 }
 type Field struct {
 	Pos  error.Position
@@ -78,6 +79,13 @@ type ExprAssign struct {
 	Left  Expr
 	Right Expr
 }
+
+type ExprCall struct {
+	Pos  error.Position
+	Name string
+	Args []Expr
+}
+
 type CompoundField struct {
 	Name string
 	Init Expr
@@ -147,11 +155,6 @@ func (s *StmtExpr) stmtNode() {}
 func (s *StmtExpr) GetPos() error.Position {
 	return s.Pos
 }
-func (e *ExprInt) exprNode() {}
-func (e *ExprInt) GetPos() error.Position {
-	return e.Pos
-}
-
 func (e *ExprBinary) exprNode() {}
 func (e *ExprBinary) GetPos() error.Position {
 	return e.Pos
@@ -160,11 +163,6 @@ func (e ExprCompound) exprNode() {}
 func (e ExprCompound) GetPos() error.Position {
 	return e.Pos
 }
-func (e *ExprIdent) exprNode() {}
-func (e *ExprIdent) GetPos() error.Position {
-	return e.Pos
-}
-
 func (e *ExprUnary) exprNode() {}
 func (e *ExprUnary) GetPos() error.Position {
 	return e.Pos
@@ -176,6 +174,20 @@ func (e *ExprAssign) GetPos() error.Position {
 }
 func (e *ExprField) exprNode() {}
 func (e *ExprField) GetPos() error.Position {
+	return e.Pos
+}
+
+func (e *ExprCall) exprNode() {}
+func (e *ExprCall) GetPos() error.Position {
+	return e.Pos
+}
+
+func (e *ExprIdent) exprNode() {}
+func (e *ExprIdent) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprInt) exprNode() {}
+func (e *ExprInt) GetPos() error.Position {
 	return e.Pos
 }
 

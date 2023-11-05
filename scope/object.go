@@ -10,6 +10,7 @@ type ObjectKind int
 const (
 	FN ObjectKind = iota
 	VAR
+	PARAM
 	FIELD
 	TYPE
 )

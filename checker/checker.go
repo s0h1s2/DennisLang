@@ -5,6 +5,7 @@ import (
 
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
+	"github.com/s0h1s2/scope"
 	"github.com/s0h1s2/types"
 )
 
@@ -130,6 +131,19 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 			}
 			return node.Type
 		}
+	case *resolver.ExprCall:
+		{
+			fnObj := c.symTable.Symbols.GetObj(node.Name)
+			params := fnObj.Scope.QueryObjByKind(scope.PARAM)
+			for i, arg := range node.Args {
+				argType := c.checkExpr(arg.Expr, params[i].Type)
+				if !c.areTypesEqual(params[i].Type, argType) {
+					c.handler.ReportError(arg.Pos, "Expected '%s' type but got '%s' in function '%s' arguments", params[i].Type.TypeName, argType.TypeName, node.Name)
+					return nil
+				}
+			}
+			return fnObj.Type
+		}
 	case *resolver.ExprUnary:
 		{
 			// TODO: i'm not sure this semantic is right for '&'
@@ -146,6 +160,9 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 				}
 				typeResult = expectedType
 			}
+		}
+	case *resolver.ExprArg:
+		{
 		}
 	case *resolver.ExprInt:
 		{

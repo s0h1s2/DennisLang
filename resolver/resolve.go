@@ -80,13 +80,27 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				handler.ReportError(node.Pos, "Can't redeclare function '%s' more than once", node.Name)
 				return nil
 			}
-			typ, ok := isTypeExist(node.RetType)
+			retType, ok := isTypeExist(node.RetType)
 			if !ok {
 				return nil
 			}
-			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, nil))
-			resolvedBody := resolveStmt(node.Body, nil)
-			return &DeclFunction{Scope: resolvedBody.GetScope(), Name: node.Name, Body: resolvedBody, ReturnType: typ}
+			fnScope := scope.NewScope(nil)
+			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, retType))
+			for _, param := range node.Parameters {
+				if !fnScope.LookupOnce(param.Name) {
+					typ, ok := isTypeExist(param.Type)
+					if !ok {
+						return nil
+					}
+					fnScope.Define(param.Name, scope.NewObj(scope.PARAM, typ))
+				} else {
+					handler.ReportError(node.Pos, "Can't redeclare '%s' parameter more than once", param.Name)
+					return nil
+				}
+			}
+			table.Symbols.GetObj(node.Name).Scope = fnScope
+			resolvedBody := resolveStmt(node.Body, fnScope)
+			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: retType}
 		}
 	case *ast.DeclStruct:
 		{
@@ -205,6 +219,27 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 				}
 			}
 			return &ExprCompound{Type: typ, Fields: resolvedFields, Pos: node.Pos}
+		}
+	case *ast.ExprCall:
+		{
+			if !table.Symbols.LookupOnce(node.Name) {
+				handler.ReportError(node.Pos, "Function '%s' not found", node.Name)
+				return nil
+			}
+			fnObj := table.Symbols.GetObj(node.Name)
+			params := fnObj.Scope.QueryByKind(scope.PARAM)
+			args := make([]*ExprArg, 0)
+			for _, arg := range node.Args {
+				resolved := resolveExpr(arg, currScope, nil)
+				args = append(args, &ExprArg{Expr: resolved})
+			}
+			paramLen := len(params)
+			argsLen := len(args)
+			if paramLen != argsLen {
+				handler.ReportError(node.Pos, "Function '%s' expected '%d' arguments but got '%d' arguments", node.Name, paramLen, argsLen)
+				return nil
+			}
+			return &ExprCall{Name: node.Name, Args: args, Pos: node.Pos}
 		}
 	case *ast.ExprAssign:
 		{

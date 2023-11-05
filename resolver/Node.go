@@ -122,6 +122,16 @@ type ExprCompound struct {
 	Fields []ExprCompoundField
 	Pos    error.Position
 }
+type ExprArg struct {
+	Name string
+	Expr ExprNode
+	Pos  error.Position
+}
+type ExprCall struct {
+	Name string
+	Args []*ExprArg
+	Pos  error.Position
+}
 
 type ExprInt struct {
 	Value string
@@ -266,6 +276,26 @@ func (e *ExprCompound) GetPos() error.Position {
 	return e.Pos
 }
 func (e *ExprCompound) GetScope() *scope.Scope {
+	return nil
+}
+func (e *ExprArg) exprNode() {}
+func (e *ExprArg) GetType() *types.Type {
+	return nil
+}
+func (e *ExprArg) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprArg) GetScope() *scope.Scope {
+	return nil
+}
+func (e *ExprCall) exprNode() {}
+func (e *ExprCall) GetType() *types.Type {
+	return nil
+}
+func (e *ExprCall) GetPos() error.Position {
+	return e.Pos
+}
+func (e *ExprCall) GetScope() *scope.Scope {
 	return nil
 }
 

@@ -143,12 +143,29 @@ func (p *Parser) parsePrimary() ast.Expr {
 }
 func (p *Parser) parseBase() ast.Expr {
 	expr := p.parsePrimary()
-	// TODO: maybe parse other things so for now leave that like
-	for p.matchToken(token.TK_DOT) {
+	for p.matchToken(token.TK_OPENPARAN) || p.matchToken(token.TK_DOT) {
 		if p.matchToken(token.TK_DOT) {
 			p.consumeToken()
 			name := p.expectToken(token.TK_IDENT)
 			expr = &ast.ExprField{Expr: expr, Name: name.Literal, Pos: name.Pos}
+		} else if p.matchToken(token.TK_OPENPARAN) {
+			paranPos := p.expectToken(token.TK_OPENPARAN)
+			// parse function arguments
+			args := make([]ast.Expr, 0)
+			for !p.matchToken(token.TK_CLOSEPARAN) {
+				args = append(args, p.parseExpression())
+				if !p.matchToken(token.TK_COMMA) {
+					break
+				}
+				p.consumeToken()
+			}
+			p.expectToken(token.TK_CLOSEPARAN)
+			name, ok := expr.(*ast.ExprIdent)
+			if !ok {
+				p.reportHere("Function call must be a name")
+				return nil
+			}
+			expr = &ast.ExprCall{Pos: paranPos.Pos, Args: args, Name: name.Name}
 		}
 	}
 	return expr
@@ -351,9 +368,28 @@ func (p *Parser) parseStruct() ast.Decl {
 		Pos:    name.Pos,
 	}
 }
+
+func (p *Parser) parseFunctionParameters() []ast.Field {
+	params := make([]ast.Field, 0)
+	for !p.atEnd() && !p.matchToken(token.TK_CLOSEPARAN) {
+		name := p.expectToken(token.TK_IDENT)
+		if name == nil {
+			return nil
+		}
+		p.expectToken(token.TK_COLON)
+		typeSpec := p.parseType()
+		params = append(params, ast.Field{Name: name.Literal, Type: typeSpec})
+		if !p.matchToken(token.TK_COMMA) {
+			break
+		}
+		p.consumeToken()
+	}
+	return params
+}
 func (p *Parser) parseFunction() *ast.DeclFunction {
 	name := p.expectToken(token.TK_IDENT)
 	p.expectToken(token.TK_OPENPARAN)
+	params := p.parseFunctionParameters()
 	p.expectToken(token.TK_CLOSEPARAN)
 	p.expectToken(token.TK_COLON)
 	typeResult := p.parseType()
@@ -361,7 +397,7 @@ func (p *Parser) parseFunction() *ast.DeclFunction {
 	if p.hasError() {
 		return nil
 	}
-	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, End: p.currentToken().Pos}
+	return &ast.DeclFunction{Name: name.Literal, RetType: typeResult, Body: body, Pos: name.Pos, Parameters: params, End: p.currentToken().Pos}
 }
 func (p *Parser) Parse() []ast.Decl {
 	println("----PARSER----")
