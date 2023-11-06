@@ -76,6 +76,10 @@ func main() {
 	for _, token := range tokens {
 		fmt.Println(token.String())
 	}
+	if bag.GotErrors() {
+		bag.PrintErrors()
+		return
+	}
 	// Passes
 	parser := parser.New(tokens, bag)
 	tree := parser.Parse()

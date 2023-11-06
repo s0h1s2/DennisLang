@@ -2,6 +2,8 @@ package lexer
 
 // TODO: This lexer is so stupid maybe make it more automate
 import (
+	"strings"
+
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/token"
 )
@@ -216,6 +218,21 @@ start:
 				if lex.ch == '/' {
 					lex.scanSingleLineComment()
 				}
+			}
+		case '"':
+			{
+				// TODO: implemented escape sequences.
+				lex.next()
+				var sb strings.Builder
+				for lex.ch != '\n' && lex.ch != '"' {
+					sb.WriteByte(lex.ch)
+					lex.next()
+				}
+				if lex.ch != '"' {
+					lex.errors.ReportError(error.Position{Line: lex.line, Start: lex.start, End: lex.current}, "Unterminated string")
+				}
+				lex.next()
+				return lex.makeToken(token.TK_STRING, sb.String())
 			}
 		default:
 			{

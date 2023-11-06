@@ -36,6 +36,7 @@ const (
 	TK_IF
 	TK_TRUE
 	TK_FALSE
+	TK_STRING
 	TK_RETURN
 	keywords_end
 
@@ -64,6 +65,7 @@ var tokenKindString = [...]string{
 	TK_NOTEQUAL:     "!=",
 	TK_EQUAL:        "==",
 	TK_INTEGER:      "integer",
+	TK_STRING:       "string",
 	TK_IDENT:        "identifier",
 	TK_RETURN:       "return",
 	TK_STRUCT:       "struct",
