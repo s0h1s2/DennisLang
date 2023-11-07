@@ -1,3 +1,8 @@
+/*
+May you do good and not evil.
+May you find forgiveness for yourself and forgive others.
+May you share freely, never taking more than you give.
+*/
 package parser
 
 import (
@@ -307,7 +312,6 @@ func (p *Parser) parseType() ast.TypeSpec {
 	}
 
 }
-
 func (p *Parser) parseDeclarations() []ast.Decl {
 	decls := []ast.Decl{}
 	for p.currentToken().Kind != token.TK_EOF {
@@ -321,6 +325,11 @@ func (p *Parser) parseDeclarations() []ast.Decl {
 			{
 				p.consumeToken()
 				decls = append(decls, p.parseStruct())
+			}
+		case token.TK_EXTERN:
+			{
+				p.consumeToken()
+				decls = append(decls, p.parseExternal())
 			}
 		default:
 			{
@@ -346,6 +355,25 @@ func (p *Parser) parseField() *ast.Field {
 		return nil
 	}
 	return &ast.Field{Name: name.Literal, Type: typ, Pos: name.Pos}
+}
+func (p *Parser) parseFunctionHeader() (*token.Token, []ast.Field, ast.TypeSpec) {
+	name := p.expectToken(token.TK_IDENT)
+	p.expectToken(token.TK_OPENPARAN)
+	params := p.parseFunctionParameters()
+	p.expectToken(token.TK_CLOSEPARAN)
+	p.expectToken(token.TK_COLON)
+	typeResult := p.parseType()
+	return name, params, typeResult
+}
+func (p *Parser) parseExternal() ast.Decl {
+	if p.matchToken(token.TK_FN) {
+		p.consumeToken()
+		name, params, typee := p.parseFunctionHeader()
+		p.expectToken(token.TK_SEMICOLON)
+		return &ast.DeclExternalFunction{Parameters: params, Name: name.Literal, ReturnType: typee, Pos: name.Pos}
+	}
+	p.reportHere("Expected 'fn' or 'let' after 'external' keyword but got '%s'", p.currentToken().Kind.String())
+	return nil
 }
 func (p *Parser) parseStruct() ast.Decl {
 	name := p.expectToken(token.TK_IDENT)
@@ -387,12 +415,7 @@ func (p *Parser) parseFunctionParameters() []ast.Field {
 	return params
 }
 func (p *Parser) parseFunction() *ast.DeclFunction {
-	name := p.expectToken(token.TK_IDENT)
-	p.expectToken(token.TK_OPENPARAN)
-	params := p.parseFunctionParameters()
-	p.expectToken(token.TK_CLOSEPARAN)
-	p.expectToken(token.TK_COLON)
-	typeResult := p.parseType()
+	name, params, typeResult := p.parseFunctionHeader()
 	body := p.parseBlock()
 	if p.hasError() {
 		return nil

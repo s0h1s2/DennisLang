@@ -74,6 +74,34 @@ func isTypeExist(typee ast.TypeSpec) (*types.Type, bool) {
 }
 func resolveDecl(decl ast.Decl) DeclNode {
 	switch node := decl.(type) {
+	case *ast.DeclExternalFunction:
+		{
+			if table.Symbols.LookupOnce(node.Name) {
+				handler.ReportError(node.Pos, "Can't redeclare function '%s' more than once", node.Name)
+				return nil
+			}
+			retType, ok := isTypeExist(node.ReturnType)
+			if !ok {
+				return nil
+			}
+			fnScope := scope.NewScope(nil)
+			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, retType))
+			for _, param := range node.Parameters {
+				if !fnScope.LookupOnce(param.Name) {
+					typ, ok := isTypeExist(param.Type)
+					if !ok {
+						return nil
+					}
+					fnScope.Define(param.Name, scope.NewObj(scope.PARAM, typ))
+				} else {
+					handler.ReportError(node.Pos, "Can't redeclare '%s' parameter more than once", param.Name)
+					return nil
+				}
+			}
+
+			table.Symbols.GetObj(node.Name).Scope = fnScope
+			return &DeclExternalFunction{ReturnType: retType, Name: node.Name, Scope: fnScope, Pos: node.Pos}
+		}
 	case *ast.DeclFunction:
 		{
 			if table.Symbols.LookupOnce(node.Name) {
@@ -98,6 +126,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 					return nil
 				}
 			}
+
 			table.Symbols.GetObj(node.Name).Scope = fnScope
 			resolvedBody := resolveStmt(node.Body, fnScope)
 			return &DeclFunction{Scope: fnScope, Name: node.Name, Body: resolvedBody, ReturnType: retType}

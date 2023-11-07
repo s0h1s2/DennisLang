@@ -60,6 +60,12 @@ type DeclFunction struct {
 	Scope      *scope.Scope
 	Body       StmtNode // StmtBlock
 }
+type DeclExternalFunction struct {
+	Name       string
+	ReturnType *types.Type
+	Scope      *scope.Scope // store parameters
+	Pos        error.Position
+}
 type Field struct {
 	Name string
 	Type *types.Type
@@ -167,6 +173,16 @@ func (d *DeclStruct) GetPos() error.Position {
 	return error.Position{}
 }
 func (d *DeclStruct) GetScope() *scope.Scope {
+	return d.Scope
+}
+func (d *DeclExternalFunction) declNode() {}
+func (d *DeclExternalFunction) GetType() *types.Type {
+	return d.ReturnType
+}
+func (d *DeclExternalFunction) GetPos() error.Position {
+	return error.Position{}
+}
+func (d *DeclExternalFunction) GetScope() *scope.Scope {
 	return d.Scope
 }
 
