@@ -85,10 +85,10 @@ func (p *Parser) parseCompound(typ ast.TypeSpec) ast.Expr {
 		p.expectToken(token.TK_COLON)
 		init := p.parseExpression()
 		fields = append(fields, ast.CompoundField{Name: name.Literal, Init: init, Pos: name.Pos})
-		if !p.matchToken(token.TK_COMMA) {
+		if !p.matchToken(token.TK_COMMA) || p.matchToken(token.TK_OPENBRACE) {
 			break
 		}
-		p.consumeToken()
+		p.expectToken(token.TK_COMMA)
 	}
 	p.expectToken(token.TK_CLOSEBRACE)
 	return &ast.ExprCompound{Type: typ, Fields: fields, Pos: tk.Pos}

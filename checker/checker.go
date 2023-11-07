@@ -2,7 +2,6 @@ package checker
 
 import (
 	"fmt"
-
 	"github.com/s0h1s2/error"
 	"github.com/s0h1s2/resolver"
 	"github.com/s0h1s2/scope"
@@ -178,7 +177,7 @@ func (c *checker) checkExpr(expr resolver.ExprNode, expectedType *types.Type) *t
 		}
 	case *resolver.ExprIdentifier:
 		{
-			typeResult = node.Type
+			return node.Type
 		}
 	default:
 		{

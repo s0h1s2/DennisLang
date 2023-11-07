@@ -98,11 +98,11 @@ func main() {
 		bag.PrintErrors()
 		return
 	}
-	f, err := os.Create("output.c")
+	f, err := os.Create("output/output.c")
 	if err != nil {
-		println("Unable to write to file ")
+		println(err.Error())
 		return
 	}
-	generator := c.New(f, resolvedDecls)
+	generator := c.New(f, resolvedDecls, table)
 	generator.GenerateCode()
 }

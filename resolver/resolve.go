@@ -27,8 +27,9 @@ func InitTable() *Table {
 	t.Symbols.Define("i32", scope.NewTypeObj(types.NewType("i32", types.TYPE_INT, 1, 1)))
 	t.Symbols.Define("i64", scope.NewTypeObj(types.NewType("i64", types.TYPE_INT, 1, 1)))
 	t.Symbols.Define("bool", scope.NewTypeObj(types.NewType("bool", types.TYPE_BOOL, 1, 1)))
-	t.Symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
-	t.Symbols.Define("string", scope.NewTypeObj(types.NewType("string", types.TYPE_STRING, 0, 0)))
+	void_type := t.Symbols.Define("void", scope.NewTypeObj(types.NewType("void", types.TYPE_VOID, 0, 0)))
+	string_type := t.Symbols.Define("string", scope.NewTypeObj(types.NewType("string", types.TYPE_STRING, 0, 0)))
+	t.Symbols.Define("printf", scope.NewFuncObj(map[string]*types.Type{"input": string_type.Type}, void_type.Type))
 	return &t
 }
 func Resolve(program []ast.Decl, bag *error.DiagnosticBag) (*Table, []DeclNode) {
@@ -88,14 +89,14 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				return nil
 			}
 			fnScope := scope.NewScope(nil)
-			table.Symbols.Define(node.Name, scope.NewObj(scope.FN, retType))
+			table.Symbols.Define(node.Name, scope.NewObj(node.Name, scope.FN, retType))
 			for _, param := range node.Parameters {
 				if !fnScope.LookupOnce(param.Name) {
 					typ, ok := isTypeExist(param.Type)
 					if !ok {
 						return nil
 					}
-					fnScope.Define(param.Name, scope.NewObj(scope.PARAM, typ))
+					fnScope.Define(param.Name, scope.NewObj(param.Name, scope.PARAM, typ))
 				} else {
 					handler.ReportError(node.Pos, "Can't redeclare '%s' parameter more than once", param.Name)
 					return nil
@@ -112,7 +113,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				return nil
 			}
 			structScope := scope.NewScope(nil)
-			obj := scope.NewObj(scope.TYPE, types.NewType(node.Name, types.TYPE_STRUCT, 0, 0))
+			obj := scope.NewObj(node.Name, scope.TYPE, types.NewType(node.Name, types.TYPE_STRUCT, 0, 0))
 			obj.Scope = structScope
 			table.Symbols.Define(node.Name, obj)
 			fields := make([]Field, 0, 4)
@@ -125,7 +126,7 @@ func resolveDecl(decl ast.Decl) DeclNode {
 				if !ok {
 					return nil
 				}
-				obj := scope.NewObj(scope.FIELD, typ)
+				obj := scope.NewObj(node.Name, scope.FIELD, typ)
 				if typ.Kind == types.TYPE_STRUCT {
 					obj.Scope = table.Symbols.GetObj(typ.TypeName).Scope
 				}
@@ -148,7 +149,7 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				if !ok {
 					return nil
 				}
-				currScope.Define(node.Name, scope.NewObj(scope.VAR, typ))
+				currScope.Define(node.Name, scope.NewObj(node.Name, scope.VAR, typ))
 				var resolvedExpr ExprNode
 				if node.Init != nil {
 					resolvedExpr = resolveExpr(node.Init, currScope, nil)
@@ -285,7 +286,7 @@ func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) 
 				}
 				structScope := table.Symbols.GetObj(typeName).Scope
 				if structScope.LookupOnce(node.Name) {
-					return &ExprField{Type: structScope.GetObj(node.Name).Type, Name: node.Name}
+					return &ExprField{Expr: left, Type: structScope.GetObj(node.Name).Type, Name: node.Name}
 				} else {
 					handler.ReportError(left.GetPos(), "'%s' doesn't have '%s' field", typeName, node.Name)
 				}

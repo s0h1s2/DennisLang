@@ -28,8 +28,9 @@ func (s *Scope) LookupOnce(name string) bool {
 	return false
 }
 
-func (s *Scope) Define(name string, obj *Object) {
+func (s *Scope) Define(name string, obj *Object) *Object {
 	s.symbols[name] = obj
+	return obj
 }
 func (s *Scope) QueryByKind(kind ObjectKind) []string {
 	objects := make([]string, 0, 4)

@@ -102,6 +102,7 @@ type ExprBinary struct {
 }
 
 type ExprField struct {
+	Expr ExprNode
 	Name string
 	Type *types.Type
 	Pos  error.Position
