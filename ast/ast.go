@@ -36,6 +36,13 @@ type DeclStruct struct {
 	Name   string
 	Fields []*Field
 }
+type DeclExternalFunction struct {
+	Pos        error.Position
+	Name       string
+	Parameters []Field
+	ReturnType TypeSpec
+}
+
 type Stmt interface {
 	Node
 	stmtNode()
@@ -130,6 +137,11 @@ func (e *DeclFunction) declNode() {}
 func (e *DeclFunction) GetPos() error.Position {
 	return e.Pos
 }
+func (e *DeclExternalFunction) declNode() {}
+func (e *DeclExternalFunction) GetPos() error.Position {
+	return e.Pos
+}
+
 func (e *DeclStruct) declNode() {}
 func (e *DeclStruct) GetPos() error.Position {
 	return e.Pos

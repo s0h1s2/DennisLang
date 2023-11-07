@@ -31,6 +31,7 @@ const (
 	// KEYWORDS
 	keywords_begin
 	TK_LET
+	TK_EXTERN
 	TK_FN
 	TK_STRUCT
 	TK_IF
@@ -66,6 +67,7 @@ var tokenKindString = [...]string{
 	TK_EQUAL:        "==",
 	TK_INTEGER:      "integer",
 	TK_STRING:       "string",
+	TK_EXTERN:       "extern",
 	TK_IDENT:        "identifier",
 	TK_RETURN:       "return",
 	TK_STRUCT:       "struct",
