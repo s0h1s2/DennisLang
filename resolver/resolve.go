@@ -165,6 +165,9 @@ func resolveDecl(decl ast.Decl) DeclNode {
 }
 
 func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
+	if stmt == nil {
+		return nil
+	}
 	pos := stmt.GetPos()
 	switch node := stmt.(type) {
 	case *ast.StmtLet:
@@ -190,6 +193,23 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 				return &StmtReturn{Result: resolvedExpr}
 			}
 		}
+	case *ast.StmtIf:
+		{
+			resolvedExpr := resolveExpr(node.Cond, currScope, nil)
+			resolvedThen := resolveStmt(node.Then, currScope)
+			resolvedElseIf := resolveStmt(node.ElseIf, currScope)
+			var resolvedElse StmtNode
+			if node.Else != nil {
+				resolvedElse = resolveStmt(node.Else, currScope)
+			}
+			return &StmtIf{Expr: resolvedExpr, Then: resolvedThen, ElseIf: resolvedElseIf, Else: resolvedElse, Pos: node.Pos}
+		}
+	case *ast.StmtLoop:
+		{
+			resolvedExpr := resolveExpr(node.Cond, currScope, nil)
+			resolvedBody := resolveStmt(node.Then, currScope)
+			return &StmtLoop{Expr: resolvedExpr, Body: resolvedBody, Pos: node.Pos}
+		}
 	case *ast.StmtExpr:
 		{
 			expr := resolveExpr(node.Expr, currScope, nil)
@@ -209,6 +229,9 @@ func resolveStmt(stmt ast.Stmt, currScope *scope.Scope) StmtNode {
 }
 
 func resolveExpr(expr ast.Expr, currScope *scope.Scope, typeScope *scope.Scope) ExprNode {
+	if expr == nil {
+		return nil
+	}
 	pos := expr.GetPos()
 	switch node := expr.(type) {
 	case *ast.ExprBinary:

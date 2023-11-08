@@ -84,11 +84,23 @@ type StmtLet struct {
 	Scope *scope.Scope
 	Type  *types.Type
 }
+type StmtIf struct {
+	Pos    error.Position
+	Expr   ExprNode
+	Then   StmtNode
+	ElseIf StmtNode
+	Else   StmtNode
+}
+type StmtLoop struct {
+	Pos  error.Position
+	Expr ExprNode
+	Body StmtNode
+}
+
 type StmtExpr struct {
 	Expr  ExprNode
 	Scope *scope.Scope
 }
-
 type StmtBlock struct {
 	Scope *scope.Scope
 	Body  []StmtNode
@@ -206,7 +218,27 @@ func (s *StmtBlock) GetPos() error.Position {
 func (s *StmtBlock) GetScope() *scope.Scope {
 	return s.Scope
 }
+func (d *StmtIf) stmtNode() {}
+func (d *StmtIf) GetType() *types.Type {
+	return nil
+}
+func (s *StmtIf) GetPos() error.Position {
+	return s.Pos
+}
+func (s *StmtIf) GetScope() *scope.Scope {
+	return nil
+}
 
+func (d *StmtLoop) stmtNode() {}
+func (d *StmtLoop) GetType() *types.Type {
+	return nil
+}
+func (s *StmtLoop) GetPos() error.Position {
+	return s.Pos
+}
+func (s *StmtLoop) GetScope() *scope.Scope {
+	return nil
+}
 func (d *StmtReturn) stmtNode() {}
 func (d *StmtReturn) GetType() *types.Type {
 	return nil
