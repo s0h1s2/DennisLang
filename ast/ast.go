@@ -59,6 +59,13 @@ type StmtLet struct {
 	Init Expr
 }
 type StmtIf struct {
+	Pos    error.Position
+	Cond   Expr
+	Then   *StmtBlock
+	ElseIf Stmt
+	Else   *StmtBlock
+}
+type StmtLoop struct {
 	Pos  error.Position
 	Cond Expr
 	Then *StmtBlock
@@ -152,6 +159,10 @@ func (s *StmtLet) GetPos() error.Position {
 }
 func (s *StmtIf) stmtNode() {}
 func (s *StmtIf) GetPos() error.Position {
+	return s.Pos
+}
+func (s *StmtLoop) stmtNode() {}
+func (s *StmtLoop) GetPos() error.Position {
 	return s.Pos
 }
 func (s *StmtBlock) stmtNode() {}

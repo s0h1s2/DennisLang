@@ -31,10 +31,12 @@ const (
 	// KEYWORDS
 	keywords_begin
 	TK_LET
+	TK_LOOP
 	TK_EXTERN
 	TK_FN
 	TK_STRUCT
 	TK_IF
+	TK_ELSE
 	TK_TRUE
 	TK_FALSE
 	TK_STRING
@@ -71,9 +73,11 @@ var tokenKindString = [...]string{
 	TK_IDENT:        "identifier",
 	TK_RETURN:       "return",
 	TK_STRUCT:       "struct",
+	TK_LOOP:         "loop",
 	TK_LET:          "let",
 	TK_FN:           "fn",
 	TK_IF:           "if",
+	TK_ELSE:         "else",
 	TK_TRUE:         "true",
 	TK_FALSE:        "false",
 	TK_EOF:          "EOF",

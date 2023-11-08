@@ -247,6 +247,14 @@ func (p *Parser) parseReturn() ast.Stmt {
 	p.expectToken(token.TK_SEMICOLON)
 	return &ast.StmtReturn{Pos: ret.Pos, Result: expr}
 }
+func (p *Parser) parseLoop() ast.Stmt {
+	loopToken := p.expectToken(token.TK_LOOP)
+	p.isFlowControl = true
+	expr := p.parseExpression()
+	p.isFlowControl = false
+	then := p.parseBlock()
+	return &ast.StmtLoop{Cond: expr, Then: then, Pos: loopToken.Pos}
+}
 func (p *Parser) parseIf() ast.Stmt {
 	p.expectToken(token.TK_IF)
 	pos := p.currentToken().Pos
@@ -254,11 +262,22 @@ func (p *Parser) parseIf() ast.Stmt {
 	cond := p.parseExpression()
 	p.isFlowControl = false
 	then := p.parseBlock()
-
+	var elseBody *ast.StmtBlock = nil
+	var elseIf ast.Stmt = nil
+	if p.matchToken(token.TK_ELSE) {
+		p.consumeToken()
+		if p.matchToken(token.TK_IF) {
+			elseIf = p.parseIf()
+		} else {
+			elseBody = p.parseBlock()
+		}
+	}
 	return &ast.StmtIf{
-		Cond: cond,
-		Then: then,
-		Pos:  pos,
+		Cond:   cond,
+		Then:   then,
+		ElseIf: elseIf,
+		Else:   elseBody,
+		Pos:    pos,
 	}
 }
 func (p *Parser) parseBlock() *ast.StmtBlock {
@@ -283,6 +302,10 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			{
 				stmts = append(stmts, p.parseIf())
 			}
+		case token.TK_LOOP:
+			{
+				stmts = append(stmts, p.parseLoop())
+			}
 		default:
 			{
 				stmts = append(stmts, &ast.StmtExpr{Expr: p.parseExpression()})
@@ -290,6 +313,7 @@ func (p *Parser) parseBlock() *ast.StmtBlock {
 			}
 		}
 	}
+
 	p.expectToken(token.TK_CLOSEBRACE)
 	return &ast.StmtBlock{Block: stmts}
 }
